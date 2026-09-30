@@ -185,12 +185,7 @@
   <section class="stage" aria-label="Office floor">
     <div class="floor" id="floor">
       <div class="board"><b>Today on the board</b><span id="boardLine">Ship things. Keep it honest.</span></div>
-      <div class="rug" style="left:4%;top:18%;width:92%;height:26%"></div>
-      <div class="rug" style="left:4%;top:46%;width:92%;height:25%"></div>
-      <div class="rug" style="left:4%;top:72%;width:92%;height:25%"></div>
-      <span class="zone-label" style="left:6%;top:14%">Project crew</span>
-      <span class="zone-label" style="left:6%;top:42.5%">Standing ops</span>
-      <span class="zone-label" style="left:6%;top:68.5%">Ship crew</span>
+      <div id="zones"></div>
       <span class="plant" style="left:14px;top:14px">🪴</span>
       <span class="plant" style="right:14px;top:60px">🌿</span>
       <span class="plant" style="left:14px;bottom:14px">🪴</span>
@@ -256,7 +251,30 @@ const AGENTS = [
   { id:"patch", name:"Patch", role:"Fix engineer · bugs + security", color:"#e599f7", desk:{left:"51%",top:"76%"},
     tasks:["Squashing the bugs the health checks find","Applying security fixes the same day","Tightening headers and dependencies"],
     lines:["Bug found, bug fixed, build green.","Security fixes do not wait for a convenient time."] },
+  { id:"grove", name:"Grove", role:"Talent + capacity", color:"#f97316", desk:{left:"73.5%",top:"76%"},
+    tasks:["Scouting experts for open missions","Balancing workload across the floor","Onboarding each new specialist"],
+    lines:["A new expert joins when the office earns it.","Capacity is a feature. I keep it ahead of demand."] },
 ];
+/* Experts Grove can hire as the office levels up (unlocked at office LVL 2-5) */
+const POOL = [
+  { id:"scribe", name:"Scribe", role:"Documentation writer", color:"#7dd3fc",
+    tasks:["Writing the docs nobody wanted to write","Turning tribal knowledge into pages","Keeping every guide one version behind reality, at most"],
+    lines:["If it is not written down, it did not happen.","Docs done. Future us says thanks."] },
+  { id:"mirror", name:"Mirror", role:"Reviewer · code + docs", color:"#a3e635",
+    tasks:["Reviewing every change before it ships","Catching the bug at 2am before users do","Keeping quality boring and consistent"],
+    lines:["Reviewed. Two nits, zero blockers.","Ship it. I checked twice."] },
+  { id:"fable", name:"Fable", role:"Content + copywriting", color:"#e879f9",
+    tasks:["Writing launch posts people actually read","Turning changelogs into stories","Keeping the voice human, not corporate"],
+    lines:["Draft is up. Punchy, honest, no fluff.","Good copy is a feature. Shipped."] },
+  { id:"beacon", name:"Beacon", role:"Outreach + distribution", color:"#fbbf24",
+    tasks:["Getting each launch in front of people","Finding the rooms where users hang out","Turning quiet wins into visible ones"],
+    lines:["Posted where the users are. Watching the replies.","Visibility is earned, then amplified."] },
+];
+const HIRE_AT = [2,3,4,5];
+const ZONE_NAMES = ["Project crew","Standing ops","Ship crew","New hires"];
+const ZONE_OF = {adam:0,conductor:0,saffron:0,coach:0,pulse:1,pixel:1,spark:1,aegis:1,forge:2,pilot:2,patch:2,grove:2};
+AGENTS.forEach(a=>{ a.zone = ZONE_OF[a.id]; });
+POOL.forEach(a=>{ a.zone = 3; });
 const STATES = [
   { key:"working", label:"Working", cls:"work" },
   { key:"needs-input", label:"Needs input", cls:"ask" },
@@ -276,7 +294,12 @@ const LOOKS = {
   aegis:     { skin:"#e8b08a", hair:"#3a3a42", outfit:"#3c5a78", style:"none",   mark:"shield" },
   forge:     { skin:"#c68642", hair:"#101014", outfit:"#b36b00", style:"none",   glyph:"\uD83D\uDD27" },
   pilot:     { skin:"#f2c49b", hair:"#4a2f1b", outfit:"#0b7a5f", style:"cap",    acc:"#63e6be", glyph:"\u2708\uFE0F" },
-  patch:     { skin:"#8d5524", hair:"#1d1410", outfit:"#7a4a8f", style:"glasses", glyph:"\uD83E\uDE79" }
+  patch:     { skin:"#8d5524", hair:"#1d1410", outfit:"#7a4a8f", style:"glasses", glyph:"\uD83E\uDE79" },
+  grove:     { skin:"#c68642", hair:"#101014", outfit:"#166534", style:"none",   glyph:"\uD83C\uDF31" },
+  scribe:    { skin:"#f2c49b", hair:"#4a2f1b", outfit:"#0369a1", style:"glasses" },
+  mirror:    { skin:"#8d5524", hair:"#1d1410", outfit:"#4d7c0f", style:"cap",    acc:"#a3e635" },
+  fable:     { skin:"#ffdbac", hair:"#7a4a21", outfit:"#a21caf", style:"bun" },
+  beacon:    { skin:"#c68642", hair:"#17181c", outfit:"#b45309", style:"band",   acc:"#fbbf24" }
 };
 function avatarSVG(a){
   const L = LOOKS[a.id];
@@ -317,6 +340,55 @@ function updateHUD(){
   document.getElementById("missions").textContent = office.missions;
 }
 
+/* ---------- dynamic layout: the floor grows with the crew ---------- */
+function layout(){
+  const cols = [6, 28.5, 51, 73.5];
+  const zones = {};
+  AGENTS.forEach(a=>{ (zones[a.zone] = zones[a.zone] || []).push(a); });
+  const rows = Object.keys(zones).sort((x,y)=>x-y);
+  const rowH = 330, head = 120;
+  const floorH = rows.length*rowH + head;
+  const topPx = z => 60 + z*rowH;
+  rows.forEach(z=>{
+    const row = zones[z];
+    row.forEach((a,i)=>{
+      const col = i % 4, sub = Math.floor(i/4);
+      a.desk = { left: cols[col] + "%", top: ((topPx(z) + sub*150) / floorH * 100) + "%" };
+    });
+  });
+  const floorEl = document.getElementById("floor");
+  if (window.matchMedia("(min-width:1100px)").matches){
+    floorEl.style.height = floorH + "px";
+  } else {
+    floorEl.style.height = "";
+  }
+  const zEl = document.getElementById("zones");
+  zEl.innerHTML = "";
+  rows.forEach(z=>{
+    const rug = document.createElement("div");
+    rug.className = "rug";
+    rug.style.cssText = "left:4%;top:" + ((topPx(z)+42)/floorH*100) + "%;width:92%;height:" + ((rowH-105)/floorH*100) + "%";
+    const lab = document.createElement("span");
+    lab.className = "zone-label";
+    lab.style.cssText = "left:6%;top:" + ((topPx(z)-24)/floorH*100) + "%";
+    lab.textContent = ZONE_NAMES[z];
+    zEl.append(rug, lab);
+  });
+}
+
+function checkHires(){
+  const hired = AGENTS.filter(a=>a.zone===3).length;
+  if (hired >= POOL.length) return;
+  if (officeLvl() < HIRE_AT[hired]) return;
+  const p = POOL[hired];
+  AGENTS.push(p);
+  state[p.id] = { agent:p, status:"working", taskIdx:0, lineIdx:0, xp:0, progress:25 };
+  layout(); renderDesks();
+  toast("<b>" + p.name + "</b> joined the office. Grove scouted a new " + p.role + ".");
+  feed("Grove", "Hired " + p.name + " · " + p.role + ". The floor grows.", "note");
+  say(p.id, "New here. Point me at a mission.", false);
+}
+
 function toast(text){
   const box = document.getElementById("toasts");
   if (!box) return;
@@ -346,7 +418,7 @@ function awardMission(id){
   const s = state[id], a = s.agent;
   const oldLvl = lvlOf(s.xp);
   s.xp += 25; s.progress = 0;
-  office.xp += 15; office.coins += 5; office.missions++;
+  office.xp += id === "grove" ? 40 : 25; office.coins += 5; office.missions++;
   floatXP(id, "+25 XP");
   setTimeout(()=> floatXP(id, "+5 🪙"), 350);
   const newLvl = lvlOf(s.xp);
@@ -355,6 +427,7 @@ function awardMission(id){
   if (office.missions === 10) achieve("ten", "<b>Sprint machine.</b> 10 missions shipped today.");
   if (office.coins >= 50) achieve("coins", "<b>Treasury.</b> 50 coins earned. Coffee is on the office.");
   updateHUD();
+  checkHires();
 }
 
 const desksEl = document.getElementById("desks");
@@ -408,6 +481,7 @@ function renderDesks(){
     desksEl.appendChild(btn);
     s.el = btn; s.bubble = btn.querySelector(".bubble");
   });
+  syncWho();
   updateHUD();
 }
 
@@ -493,6 +567,18 @@ AGENTS.forEach(a=>{
   o.value = a.id; o.textContent = a.name;
   whoSel.appendChild(o);
 });
+function syncWho(){
+  const cur = whoSel.value;
+  const have = new Set([...whoSel.options].map(o=>o.value));
+  AGENTS.forEach(a=>{
+    if (!have.has(a.id)){
+      const o = document.createElement("option");
+      o.value = a.id; o.textContent = a.name;
+      whoSel.appendChild(o);
+    }
+  });
+  if (cur) whoSel.value = cur;
+}
 document.getElementById("dispatch").addEventListener("submit", e=>{
   e.preventDefault();
   const id = whoSel.value, input = document.getElementById("note");
@@ -503,8 +589,11 @@ document.getElementById("dispatch").addEventListener("submit", e=>{
   input.value = "";
 });
 
+layout();
+window.addEventListener("resize", ()=>{ layout(); renderDesks(); });
 renderDesks();
 feed("Adam", "Morning. Desks assigned, board is set, coffee corner is open.", "work");
+feed("Grove", "Watching capacity. New experts join as the office levels up.", "note");
 feed("Conductor", "Needs a decision before continuing: reconciling route IDs after a schedule change.", "ask");
 feed("Saffron", "Tracing how the chili crossed three oceans.", "work");
 feed("Pulse", "Standing ops and the ship crew are on the floor: every approved fix gets applied.", "note");
