@@ -25,7 +25,7 @@
   .stage{position:relative;padding:26px;background:
     radial-gradient(1200px 500px at 20% -10%, #232a3d 0%, transparent 60%),
     linear-gradient(180deg,#12151d,#0e1118);}
-  .floor{position:relative;height:560px;border-radius:18px;border:1px solid var(--line);
+  .floor{position:relative;height:620px;border-radius:18px;border:1px solid var(--line);
     background:
       repeating-linear-gradient(0deg,transparent 0 55px,rgba(255,255,255,.03) 55px 56px),
       repeating-linear-gradient(90deg,transparent 0 55px,rgba(255,255,255,.03) 55px 56px),
@@ -118,10 +118,10 @@
   <section class="stage" aria-label="Office floor">
     <div class="floor" id="floor">
       <div class="board"><b>Today on the board</b><span id="boardLine">Ship things. Keep it honest.</span></div>
-      <div class="rug" style="left:4%;top:16%;width:44%;height:52%"></div>
-      <div class="rug" style="right:4%;top:16%;width:40%;height:52%"></div>
-      <span class="zone-label" style="left:6%;top:12%">Build zone</span>
-      <span class="zone-label" style="right:6%;top:12%">Ops zone</span>
+      <div class="rug" style="left:4%;top:20%;width:92%;height:31%"></div>
+      <div class="rug" style="left:4%;top:55%;width:92%;height:37%"></div>
+      <span class="zone-label" style="left:6%;top:15.5%">Project crew</span>
+      <span class="zone-label" style="left:6%;top:51.5%">Standing ops</span>
       <span class="plant" style="left:14px;top:14px">🪴</span>
       <span class="plant" style="right:14px;top:60px">🌿</span>
       <span class="plant" style="left:14px;bottom:14px">🪴</span>
@@ -153,18 +153,30 @@
 
 <script>
 const AGENTS = [
-  { id:"adam", name:"Adam", role:"Coordinator", color:"#ffb454", desk:{left:"10%",top:"30%"},
+  { id:"adam", name:"Adam", role:"Coordinator", color:"#ffb454", desk:{left:"6%",top:"24%"},
     tasks:["Triaging the morning queue","Turning a messy brief into three clear tasks","Checking who is blocked and unblocking them"],
     lines:["Queue is triaged. Two builds moving, one waiting on a decision.","I do not need more dashboards. I need fewer surprises."] },
-  { id:"conductor", name:"Conductor", role:"Toronto Transit data platform", color:"#5aa9ff", desk:{left:"30%",top:"52%"},
+  { id:"conductor", name:"Conductor", role:"Toronto Transit data platform", color:"#5aa9ff", desk:{left:"28.5%",top:"24%"},
     tasks:["Validating today's GTFS feed drop","Reconciling route IDs after a schedule change","Watching the ingestion pipeline stay green"],
     lines:["Feed validated. 0 bad rows, which is the best kind of boring.","A route changed shape overnight. Reconciled it before anyone noticed."] },
-  { id:"saffron", name:"Saffron", role:"Recipe Atlas", color:"#ff7aa8", desk:{left:"56%",top:"30%"},
+  { id:"saffron", name:"Saffron", role:"Recipe Atlas", color:"#ff7aa8", desk:{left:"51%",top:"24%"},
     tasks:["Tracing how the chili crossed three oceans","Fact-checking a 500-year-old tomato claim","Matching journeys to dishes people still cook"],
     lines:["The tomato was feared as poison for 200 years. The receipts check out.","Five journeys mapped. Every stop now has a source."] },
-  { id:"coach", name:"Coach", role:"Health and training", color:"#3ddc84", desk:{left:"74%",top:"52%"},
+  { id:"coach", name:"Coach", role:"Health and training", color:"#3ddc84", desk:{left:"73.5%",top:"24%"},
     tasks:["Reviewing this week's training load","Keeping sessions shoulder-friendly","Watching the trend line, not the daily noise"],
     lines:["Consistency beats intensity. Show up, log it, move on.","Posture work is unglamorous and completely worth it."] },
+  { id:"pulse", name:"Pulse", role:"Project health · daily checks", color:"#ff6b6b", desk:{left:"6%",top:"58%"},
+    tasks:["Checking every live site is up and public","Sweeping the demos for broken pages","Watching for login walls where pages should be open"],
+    lines:["Green means go. I only speak up when something breaks.","A dark demo helps nobody. I keep them lit."] },
+  { id:"pixel", name:"Pixel", role:"UI/UX research · weekly", color:"#b197fc", desk:{left:"28.5%",top:"58%"},
+    tasks:["Reviewing the phone layout on every project","Researching design patterns worth borrowing","Ranking fixes by how much users feel them"],
+    lines:["Phones first. If it fails on a small screen, it fails.","Good design is mostly removing the annoying parts."] },
+  { id:"spark", name:"Spark", role:"Improvement ideas · weekly", color:"#ffd43b", desk:{left:"51%",top:"58%"},
+    tasks:["Scanning every project for the next improvement","Ranking ideas by impact versus effort","Keeping the idea backlog free of repeats"],
+    lines:["New idea logged. Cheap to build, weirdly valuable.","The backlog grows so the projects do not stall."] },
+  { id:"aegis", name:"Aegis", role:"Security review · monthly", color:"#74c0fc", desk:{left:"73.5%",top:"58%"},
+    tasks:["Scanning public pages for leaked data","Checking repos for secrets that should not be there","Reviewing headers, dependencies, and exposure"],
+    lines:["Nothing private belongs on a public page. Ever.","I check the locks so Aaryan does not have to."] },
 ];
 const STATES = [
   { key:"working", label:"Working", cls:"work" },
@@ -178,7 +190,11 @@ const LOOKS = {
   adam:      { skin:"#f2c49b", hair:"#2e2a26", outfit:"#4f7cff", style:"phones", acc:"#ffd166" },
   conductor: { skin:"#c68642", hair:"#17181c", outfit:"#e4572e", style:"cap",    acc:"#c8102e" },
   saffron:   { skin:"#8d5524", hair:"#1d1410", outfit:"#ff9f1c", style:"bun",    acc:"#ff9f1c" },
-  coach:     { skin:"#ffdbac", hair:"#4a2f1b", outfit:"#2ec4b6", style:"band",   acc:"#ef476f" }
+  coach:     { skin:"#ffdbac", hair:"#4a2f1b", outfit:"#2ec4b6", style:"band",   acc:"#ef476f" },
+  pulse:     { skin:"#6b4423", hair:"#101014", outfit:"#e5484d", style:"none",   mark:"pulse" },
+  pixel:     { skin:"#f6cfae", hair:"#7a4a21", outfit:"#8e6bc8", style:"glasses" },
+  spark:     { skin:"#5b3a1e", hair:"#14100c", outfit:"#f5b301", style:"tuft",   mark:"spark" },
+  aegis:     { skin:"#e8b08a", hair:"#3a3a42", outfit:"#3c5a78", style:"none",   mark:"shield" }
 };
 function avatarSVG(a){
   const L = LOOKS[a.id];
@@ -186,12 +202,18 @@ function avatarSVG(a){
   if (L.style === "bun") hair += '<circle cx="24" cy="10.5" r="4" fill="' + L.hair + '"/>';
   if (L.style === "cap") hair = '<path d="M15 20a9 9 0 0 1 18 0z" fill="' + L.acc + '"/><rect x="13" y="19" width="22" height="3" rx="1.5" fill="' + L.acc + '"/>';
   if (L.style === "band") hair += '<rect x="15" y="15.5" width="18" height="3.6" fill="' + L.acc + '"/>';
+  if (L.style === "tuft") hair += '<path d="M18.5 13.5l1.8-4.2 1.8 4.2zM22.2 12.6l1.8-4.6 1.8 4.6zM25.9 13.5l1.8-4.2 1.8 4.2z" fill="' + L.hair + '"/>';
   const phones = L.style === "phones" ? '<rect x="13.4" y="19" width="3.4" height="7" rx="1.7" fill="' + L.acc + '"/><rect x="31.2" y="19" width="3.4" height="7" rx="1.7" fill="' + L.acc + '"/>' : "";
+  let mark = "";
+  if (L.mark === "pulse") mark = '<path d="M16.5 37.5h3.6l1.5-3.2 2.3 6.4 1.5-3.2h6.1" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+  if (L.mark === "spark") mark = '<path d="M24 33.5l1.3 3 3 .9-3 .9-1.3 3-1.3-3-3-.9 3-.9z" fill="#ffffff"/>';
+  if (L.mark === "shield") mark = '<path d="M24 32.8l5.2 1.8v3.6c0 2.7-2 4.4-5.2 5.5-3.2-1.1-5.2-2.8-5.2-5.5v-3.6z" fill="none" stroke="#ffffff" stroke-width="1.5"/><path d="M21.8 38.2l1.7 1.7 3-3.2" stroke="#ffffff" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  const glasses = L.style === "glasses" ? '<circle cx="20.6" cy="21.5" r="3.2" fill="none" stroke="#23242c" stroke-width="1.2"/><circle cx="27.4" cy="21.5" r="3.2" fill="none" stroke="#23242c" stroke-width="1.2"/><path d="M23.7 21.5h.6" stroke="#23242c" stroke-width="1.2"/>' : "";
   return '<svg viewBox="0 0 48 48" aria-hidden="true">' +
-    '<rect x="14" y="31" width="20" height="13" rx="5" fill="' + L.outfit + '"/>' +
+    '<rect x="14" y="31" width="20" height="13" rx="5" fill="' + L.outfit + '"/>' + mark +
     '<circle cx="24" cy="21" r="9" fill="' + L.skin + '"/>' + hair + phones +
     '<circle cx="20.6" cy="21.5" r="1.3" fill="#23242c"/><circle cx="27.4" cy="21.5" r="1.3" fill="#23242c"/>' +
-    '<path d="M20.8 25.4q3.2 2.4 6.4 0" stroke="#23242c" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>';
+    '<path d="M20.8 25.4q3.2 2.4 6.4 0" stroke="#23242c" stroke-width="1.4" fill="none" stroke-linecap="round"/>' + glasses + '</svg>';
 }
 
 const state = {};
@@ -326,6 +348,7 @@ renderDesks();
 feed("Adam", "Morning. Desks assigned, board is set, coffee corner is open.", "work");
 feed("Conductor", "Needs a decision before continuing: reconciling route IDs after a schedule change.", "ask");
 feed("Saffron", "Tracing how the chili crossed three oceans.", "work");
+feed("Pulse", "Standing ops are on the floor: health daily, ideas weekly, security monthly.", "note");
 showDetail("conductor", false);
 say("conductor", "Quick one for the human: your call on this?", true);
 setInterval(rotate, 9000);
