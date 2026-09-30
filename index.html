@@ -22,6 +22,13 @@
   header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--panel);}
   header h1{font-size:1.25rem;margin:0;letter-spacing:.4px}
   header h1 span{color:var(--accent)}
+  .hud{display:flex;align-items:center;gap:10px}
+  .lvl{font-size:.72rem;font-weight:800;letter-spacing:1px;color:#1c1503;background:linear-gradient(180deg,#ffd166,#ffb454);border-radius:8px;padding:5px 9px}
+  .coins,.missions{font-size:.82rem;color:var(--muted)}
+  .coins b,.missions b{color:var(--ink)}
+  .xpbar{display:block;height:8px;border-radius:6px;background:#0c0f16;border:1px solid var(--line);overflow:hidden;margin:0 auto}
+  .xpbar.office{width:150px}
+  .xpfill{display:block;height:100%;width:0%;background:linear-gradient(90deg,#3ddc84,#ffd166);border-radius:6px;transition:width .6s ease}
   .badge{font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 11px}
   .clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
   main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:0;min-height:calc(100vh - 65px)}
@@ -53,6 +60,20 @@
   .desk.done .table::after{background:#12293f}
   .avatar{width:46px;height:46px;margin:0 auto 6px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.05rem;color:#12131a;border:3px solid var(--line);position:relative;transition:transform .3s;overflow:hidden}
   .avatar svg{width:92%;height:92%;display:block}
+  .desk.working .avatar{box-shadow:0 0 0 3px rgba(61,220,132,.25),0 0 22px rgba(61,220,132,.35)}
+  .desk.needs-input .avatar{box-shadow:0 0 0 3px rgba(255,200,87,.3),0 0 22px rgba(255,200,87,.4)}
+  .desk.done .avatar{box-shadow:0 0 0 3px rgba(90,169,255,.3),0 0 22px rgba(90,169,255,.35)}
+  .lvlbadge{position:absolute;left:0;top:-6px;z-index:2;font-size:.62rem;font-weight:800;background:linear-gradient(180deg,#ffd166,#f0a13a);color:#1c1503;border-radius:6px;padding:2px 6px;letter-spacing:.5px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  .xpbar.mine{height:6px;margin-top:5px}
+  .xpfill.mine{background:linear-gradient(90deg,#5aa9ff,#b197fc)}
+  .missionbar{display:block;height:7px;margin:6px 4px 0;background:#0c0f16;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .missionfill{display:block;height:100%;width:0%;background:linear-gradient(90deg,#3ddc84,#ffd166);border-radius:6px;transition:width .8s ease}
+  .floatxp{position:absolute;left:50%;top:-14px;transform:translateX(-50%);font-weight:800;font-size:.85rem;color:#ffd166;text-shadow:0 2px 8px rgba(0,0,0,.6);animation:floatup 1.6s ease-out forwards;pointer-events:none;z-index:6;white-space:nowrap}
+  @keyframes floatup{0%{opacity:0;transform:translate(-50%,6px)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-26px)}}
+  #toasts{position:absolute;right:14px;bottom:64px;display:flex;flex-direction:column;gap:8px;z-index:10}
+  .toast{background:#1e2431;border:1px solid #ffd166;border-radius:10px;padding:9px 13px;font-size:.8rem;color:var(--ink);box-shadow:0 10px 26px rgba(0,0,0,.5);animation:toastin .35s ease-out;max-width:250px}
+  .toast b{color:#ffd166}
+  @keyframes toastin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
   .walker svg{margin:0 auto}
   .desk:hover .avatar{transform:translateY(-3px)}
   .dot{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg)}
@@ -94,10 +115,32 @@
   .dispatch button{background:var(--accent);color:#1c1503;border:none;border-radius:8px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
   footer{padding:12px 22px;color:var(--muted);font-size:.78rem;border-top:1px solid var(--line);background:var(--panel)}
 
+  /* ---------- bigger on laptop ---------- */
+  @media (min-width:1100px){
+    .stage{padding:34px}
+    .floor{height:1020px;
+      background:
+        repeating-linear-gradient(0deg,transparent 0 63px,rgba(255,255,255,.035) 63px 64px),
+        repeating-linear-gradient(90deg,transparent 0 63px,rgba(255,255,255,.035) 63px 64px),
+        radial-gradient(900px 400px at 50% 0%,rgba(255,180,84,.05),transparent 70%),
+        linear-gradient(160deg,var(--floor),var(--floor2))}
+    .desk{width:180px}
+    .avatar{width:64px;height:64px}
+    .desk .table{height:56px}
+    .desk .table::after{width:58px;height:33px;top:9px}
+    .desk .name{font-size:1.05rem}
+    .desk .role,.desk .task{font-size:.86rem}
+    .board{font-size:.85rem;min-width:320px;padding:10px 20px}
+  }
+
   /* ---------- phones ---------- */
   @media (max-width:760px){
     header{padding:12px 14px}
     header h1{font-size:1.1rem}
+    .hud{order:3;width:100%;justify-content:flex-start}
+    .xpbar.office{flex:1}
+    #toasts{right:10px;left:10px;bottom:10px;align-items:center}
+    .toast{max-width:100%}
     .stage{padding:12px}
     .floor{height:auto;padding:14px 12px 12px;display:flex;flex-direction:column}
     .board{position:static;transform:none;width:100%;min-width:0;margin-bottom:14px}
@@ -120,12 +163,21 @@
     .working .dot{animation:none}
     .walker{transition:none}
     .desk:hover .avatar{transform:none}
+    .floatxp{animation:none}
+    .toast{animation:none}
+    .xpfill,.missionfill{transition:none}
   }
 </style>
 </head>
 <body>
 <header>
   <h1>Agent <span>Office</span></h1>
+  <div class="hud">
+    <span class="lvl" id="officeLvl">LVL 1</span>
+    <span class="xpbar office"><span class="xpfill" id="officeXp"></span></span>
+    <span class="coins">🪙 <b id="coins">0</b></span>
+    <span class="missions">🎯 <b id="missions">0</b> missions</span>
+  </div>
   <span class="badge">Public demo · scripted workday</span>
   <span class="clock" id="clock"></span>
 </header>
@@ -145,6 +197,7 @@
       <div class="coffee-corner">☕ Coffee corner · where the hallway chats happen</div>
       <div id="desks"></div>
       <div id="walkers"></div>
+      <div id="toasts" aria-live="polite"></div>
     </div>
   </section>
 
@@ -247,7 +300,62 @@ function avatarSVG(a){
 }
 
 const state = {};
-AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0 }; });
+AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0, xp:0, progress: Math.floor(Math.random()*40) }; });
+
+/* ---------- game state ---------- */
+const office = { xp:0, coins:0, missions:0 };
+const ACHIEVED = {};
+const RANK = ["Rookie","Regular","Pro","Veteran","MVP"];
+function lvlOf(xp){ return 1 + Math.floor(xp/100); }
+function rankOf(xp){ return RANK[Math.min(RANK.length-1, Math.floor(lvlOf(xp)/2))]; }
+function officeLvl(){ return 1 + Math.floor(office.xp/300); }
+
+function updateHUD(){
+  document.getElementById("officeLvl").textContent = "LVL " + officeLvl();
+  document.getElementById("officeXp").style.width = ((office.xp % 300)/3) + "%";
+  document.getElementById("coins").textContent = office.coins;
+  document.getElementById("missions").textContent = office.missions;
+}
+
+function toast(text){
+  const box = document.getElementById("toasts");
+  if (!box) return;
+  const t = document.createElement("div");
+  t.className = "toast"; t.innerHTML = "🏆 " + text;
+  box.appendChild(t);
+  setTimeout(()=>{ t.style.opacity = "0"; t.style.transition = "opacity .4s"; setTimeout(()=>t.remove(), 450); }, 4600);
+  while (box.children.length > 3) box.firstChild.remove();
+}
+
+function achieve(id, text){
+  if (ACHIEVED[id]) return;
+  ACHIEVED[id] = true;
+  toast(text);
+}
+
+function floatXP(id, text){
+  const s = state[id];
+  if (!s.el) return;
+  const f = document.createElement("span");
+  f.className = "floatxp"; f.textContent = text;
+  s.el.appendChild(f);
+  setTimeout(()=> f.remove(), 1700);
+}
+
+function awardMission(id){
+  const s = state[id], a = s.agent;
+  const oldLvl = lvlOf(s.xp);
+  s.xp += 25; s.progress = 0;
+  office.xp += 15; office.coins += 5; office.missions++;
+  floatXP(id, "+25 XP");
+  setTimeout(()=> floatXP(id, "+5 🪙"), 350);
+  const newLvl = lvlOf(s.xp);
+  if (newLvl > oldLvl) toast("<b>" + a.name + "</b> leveled up to LVL " + newLvl + " · " + rankOf(s.xp) + "!");
+  achieve("first", "<b>First mission shipped.</b> The office is awake.");
+  if (office.missions === 10) achieve("ten", "<b>Sprint machine.</b> 10 missions shipped today.");
+  if (office.coins >= 50) achieve("coins", "<b>Treasury.</b> 50 coins earned. Coffee is on the office.");
+  updateHUD();
+}
 
 const desksEl = document.getElementById("desks");
 const walkersEl = document.getElementById("walkers");
@@ -282,13 +390,16 @@ function renderDesks(){
     btn.setAttribute("aria-label", a.name + ", " + a.role + ", status " + statusMeta(s.status).label);
     btn.innerHTML =
       '<span class="bubble" role="status"></span>' +
+      '<span class="lvlbadge">LVL ' + lvlOf(s.xp) + '</span>' +
       '<span class="avatar" style="background:' + a.color + '26;border-color:' + a.color + '">' + avatarSVG(a) +
         '<span class="dot"></span></span>' +
       '<span class="table"></span>' +
       '<span class="name">' + a.name + '</span>' +
       '<span class="statusword"></span>' +
-      '<span class="role" style="display:block">' + a.role + '</span>' +
-      '<span class="task" style="display:block"></span>';
+      '<span class="role" style="display:block">' + a.role + ' · ' + rankOf(s.xp) + '</span>' +
+      '<span class="task" style="display:block"></span>' +
+      '<span class="missionbar"><span class="missionfill" style="width:' + Math.min(100,s.progress) + '%"></span></span>' +
+      '<span class="xpbar mine"><span class="xpfill mine" style="width:' + (s.xp % 100) + '%"></span></span>';
     btn.querySelector(".task").textContent = a.tasks[s.taskIdx % a.tasks.length];
     const sw = btn.querySelector(".statusword");
     sw.textContent = statusMeta(s.status).label;
@@ -297,6 +408,7 @@ function renderDesks(){
     desksEl.appendChild(btn);
     s.el = btn; s.bubble = btn.querySelector(".bubble");
   });
+  updateHUD();
 }
 
 function showDetail(id, announce){
@@ -311,7 +423,9 @@ function showDetail(id, announce){
   st.style.color = s.status==="working" ? "var(--green)" : s.status==="needs-input" ? "var(--amber)" : s.status==="done" ? "var(--blue)" : "var(--muted)";
   const t = document.createElement("p"); t.style.margin = "8px 0 0";
   t.textContent = "On the desk: " + a.tasks[s.taskIdx % a.tasks.length] + ".";
-  detailEl.append(h, r, st, t);
+  const g = document.createElement("div"); g.className = "status"; g.style.marginTop = "8px"; g.style.color = "var(--muted)";
+  g.textContent = "Level " + lvlOf(s.xp) + " · " + rankOf(s.xp) + " · " + (s.xp % 100) + "/100 XP · mission " + Math.min(100, Math.round(s.progress)) + "%";
+  detailEl.append(h, r, st, t, g);
   if (announce) say(id, a.lines[s.lineIdx % a.lines.length], s.status==="needs-input");
 }
 
@@ -329,12 +443,23 @@ function rotate(){
   const s = state[AGENTS[Math.floor(Math.random()*AGENTS.length)].id];
   const roll = Math.random();
   if (roll < 0.45){
-    s.status = "working"; s.taskIdx++;
-    feed(s.agent.name, s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "work");
+    s.status = "working";
+    s.progress += 25 + Math.random()*30;
+    if (s.progress >= 100){
+      s.taskIdx++;
+      s.status = "done";
+      feed(s.agent.name, "Shipped: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "done");
+      say(s.id, "Done. What is next?", false);
+      awardMission(s.id);
+    } else {
+      feed(s.agent.name, s.agent.tasks[s.taskIdx % s.agent.tasks.length] + " · " + Math.min(100, Math.round(s.progress)) + "%.", "work");
+    }
   } else if (roll < 0.62){
+    s.taskIdx++;
     s.status = "done";
     feed(s.agent.name, "Wrapped: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "done");
     say(s.id, "Done. What is next?", false);
+    awardMission(s.id);
   } else if (roll < 0.8){
     s.status = "needs-input";
     feed(s.agent.name, "Needs a decision before continuing: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "ask");
