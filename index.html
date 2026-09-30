@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agent Office · Aaryan's AI crew at work</title>
+<meta name="description" content="A scripted demo of Aaryan Chawla's AI crew: a coordinator, project agents, standing ops and an engineering ship crew working a fictional day. All tasks shown are fictional.">
+<meta property="og:title" content="Agent Office · Aaryan's AI crew at work">
+<meta property="og:description" content="Watch a small crew of AI agents work a scripted day: assigned desks, live statuses, a task queue, and a ship crew that applies every fix. Fictional demo, no live data.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://agent-office-tawny.vercel.app/">
+<meta name="twitter:card" content="summary">
 <style>
   :root{
     --bg:#10131a; --panel:#171b25; --panel2:#1e2431; --line:#2b3245;
@@ -25,13 +31,13 @@
   .stage{position:relative;padding:26px;background:
     radial-gradient(1200px 500px at 20% -10%, #232a3d 0%, transparent 60%),
     linear-gradient(180deg,#12151d,#0e1118);}
-  .floor{position:relative;height:620px;border-radius:18px;border:1px solid var(--line);
+  .floor{position:relative;height:840px;border-radius:18px;border:1px solid var(--line);
     background:
       repeating-linear-gradient(0deg,transparent 0 55px,rgba(255,255,255,.03) 55px 56px),
       repeating-linear-gradient(90deg,transparent 0 55px,rgba(255,255,255,.03) 55px 56px),
       linear-gradient(160deg,var(--floor),var(--floor2));
     overflow:hidden}
-  .zone-label{position:absolute;font-size:.68rem;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);opacity:.8}
+  .zone-label{position:absolute;font-size:.75rem;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);opacity:.8}
   .rug{position:absolute;border-radius:14px;border:1px dashed rgba(255,255,255,.09);background:rgba(255,255,255,.02)}
   .plant{position:absolute;font-size:22px;filter:saturate(.9)}
   .board{position:absolute;top:18px;left:50%;transform:translateX(-50%);background:#f4f1e6;color:#33393f;border-radius:6px;padding:8px 16px;font-size:.78rem;box-shadow:0 6px 18px rgba(0,0,0,.35);text-align:center;min-width:270px}
@@ -56,8 +62,9 @@
   .resting .dot{background:#7a8499}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,132,.5)}70%{box-shadow:0 0 0 8px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
   .desk .name{display:block;font-weight:600;font-size:.92rem;margin-top:7px}
-  .desk .role{color:var(--muted);font-size:.74rem}
-  .desk .task{color:var(--muted);font-size:.72rem;margin-top:3px;min-height:2em;line-height:1.35}
+  .statusword{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:1.1px;margin-top:3px;font-weight:700}
+  .desk .role{color:var(--muted);font-size:.78rem}
+  .desk .task{color:var(--muted);font-size:.78rem;margin-top:3px;min-height:2em;line-height:1.35}
   .bubble{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 8px);background:#fff;color:#20242e;border-radius:10px;padding:6px 10px;font-size:.74rem;max-width:190px;box-shadow:0 8px 20px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s;z-index:5}
   .bubble::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fff;border-bottom:none}
   .bubble.show{opacity:1}
@@ -104,7 +111,15 @@
     .dispatch .row{flex-wrap:wrap}
     .dispatch select{flex:1 1 100%}
     .dispatch input{flex:1 1 auto}
+    .dispatch select,.dispatch input,.dispatch button{min-height:44px}
+    .dispatch input,.dispatch select{font-size:16px}
+    .desk .role,.desk .task{font-size:.78rem}
     footer{padding:10px 14px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .working .dot{animation:none}
+    .walker{transition:none}
+    .desk:hover .avatar{transform:none}
   }
 </style>
 </head>
@@ -118,10 +133,12 @@
   <section class="stage" aria-label="Office floor">
     <div class="floor" id="floor">
       <div class="board"><b>Today on the board</b><span id="boardLine">Ship things. Keep it honest.</span></div>
-      <div class="rug" style="left:4%;top:20%;width:92%;height:31%"></div>
-      <div class="rug" style="left:4%;top:55%;width:92%;height:37%"></div>
-      <span class="zone-label" style="left:6%;top:15.5%">Project crew</span>
-      <span class="zone-label" style="left:6%;top:51.5%">Standing ops</span>
+      <div class="rug" style="left:4%;top:18%;width:92%;height:26%"></div>
+      <div class="rug" style="left:4%;top:46%;width:92%;height:25%"></div>
+      <div class="rug" style="left:4%;top:72%;width:92%;height:25%"></div>
+      <span class="zone-label" style="left:6%;top:14%">Project crew</span>
+      <span class="zone-label" style="left:6%;top:42.5%">Standing ops</span>
+      <span class="zone-label" style="left:6%;top:68.5%">Ship crew</span>
       <span class="plant" style="left:14px;top:14px">🪴</span>
       <span class="plant" style="right:14px;top:60px">🌿</span>
       <span class="plant" style="left:14px;bottom:14px">🪴</span>
@@ -133,7 +150,7 @@
 
   <aside>
     <h2>Activity</h2>
-    <div class="feed" id="feed" aria-live="polite"></div>
+    <div class="feed" id="feed" role="log" aria-live="off"></div>
     <h2>Agent detail</h2>
     <div class="detail" id="detail">Click any desk to inspect an agent.</div>
     <form class="dispatch" id="dispatch">
@@ -153,30 +170,39 @@
 
 <script>
 const AGENTS = [
-  { id:"adam", name:"Adam", role:"Coordinator", color:"#ffb454", desk:{left:"6%",top:"24%"},
+  { id:"adam", name:"Adam", role:"Coordinator", color:"#ffb454", desk:{left:"6%",top:"22%"},
     tasks:["Triaging the morning queue","Turning a messy brief into three clear tasks","Checking who is blocked and unblocking them"],
     lines:["Queue is triaged. Two builds moving, one waiting on a decision.","I do not need more dashboards. I need fewer surprises."] },
-  { id:"conductor", name:"Conductor", role:"Toronto Transit data platform", color:"#5aa9ff", desk:{left:"28.5%",top:"24%"},
+  { id:"conductor", name:"Conductor", role:"Toronto Transit data platform", color:"#5aa9ff", desk:{left:"28.5%",top:"22%"},
     tasks:["Validating today's GTFS feed drop","Reconciling route IDs after a schedule change","Watching the ingestion pipeline stay green"],
     lines:["Feed validated. 0 bad rows, which is the best kind of boring.","A route changed shape overnight. Reconciled it before anyone noticed."] },
-  { id:"saffron", name:"Saffron", role:"Recipe Atlas", color:"#ff7aa8", desk:{left:"51%",top:"24%"},
+  { id:"saffron", name:"Saffron", role:"Recipe Atlas", color:"#ff7aa8", desk:{left:"51%",top:"22%"},
     tasks:["Tracing how the chili crossed three oceans","Fact-checking a 500-year-old tomato claim","Matching journeys to dishes people still cook"],
     lines:["The tomato was feared as poison for 200 years. The receipts check out.","Five journeys mapped. Every stop now has a source."] },
-  { id:"coach", name:"Coach", role:"Health and training", color:"#3ddc84", desk:{left:"73.5%",top:"24%"},
+  { id:"coach", name:"Coach", role:"Health and training", color:"#3ddc84", desk:{left:"73.5%",top:"22%"},
     tasks:["Reviewing this week's training load","Keeping sessions shoulder-friendly","Watching the trend line, not the daily noise"],
     lines:["Consistency beats intensity. Show up, log it, move on.","Posture work is unglamorous and completely worth it."] },
-  { id:"pulse", name:"Pulse", role:"Project health · daily checks", color:"#ff6b6b", desk:{left:"6%",top:"58%"},
+  { id:"pulse", name:"Pulse", role:"Project health · daily checks", color:"#ff6b6b", desk:{left:"6%",top:"50%"},
     tasks:["Checking every live site is up and public","Sweeping the demos for broken pages","Watching for login walls where pages should be open"],
     lines:["Green means go. I only speak up when something breaks.","A dark demo helps nobody. I keep them lit."] },
-  { id:"pixel", name:"Pixel", role:"UI/UX research · weekly", color:"#b197fc", desk:{left:"28.5%",top:"58%"},
+  { id:"pixel", name:"Pixel", role:"UI/UX research · weekly", color:"#b197fc", desk:{left:"28.5%",top:"50%"},
     tasks:["Reviewing the phone layout on every project","Researching design patterns worth borrowing","Ranking fixes by how much users feel them"],
     lines:["Phones first. If it fails on a small screen, it fails.","Good design is mostly removing the annoying parts."] },
-  { id:"spark", name:"Spark", role:"Improvement ideas · weekly", color:"#ffd43b", desk:{left:"51%",top:"58%"},
+  { id:"spark", name:"Spark", role:"Improvement ideas · weekly", color:"#ffd43b", desk:{left:"51%",top:"50%"},
     tasks:["Scanning every project for the next improvement","Ranking ideas by impact versus effort","Keeping the idea backlog free of repeats"],
     lines:["New idea logged. Cheap to build, weirdly valuable.","The backlog grows so the projects do not stall."] },
-  { id:"aegis", name:"Aegis", role:"Security review · monthly", color:"#74c0fc", desk:{left:"73.5%",top:"58%"},
+  { id:"aegis", name:"Aegis", role:"Security review · monthly", color:"#74c0fc", desk:{left:"73.5%",top:"50%"},
     tasks:["Scanning public pages for leaked data","Checking repos for secrets that should not be there","Reviewing headers, dependencies, and exposure"],
     lines:["Nothing private belongs on a public page. Ever.","I check the locks so Aaryan does not have to."] },
+  { id:"forge", name:"Forge", role:"Build engineer · applies the fixes", color:"#ffa94d", desk:{left:"6%",top:"76%"},
+    tasks:["Applying the UX polish queue","Turning research findings into code","Keeping every change small and reversible"],
+    lines:["Polish applied. Build is green, targets are 44px.","Research said fix it, so I fixed it."] },
+  { id:"pilot", name:"Pilot", role:"Release engineer · deploys + verifies", color:"#63e6be", desk:{left:"28.5%",top:"76%"},
+    tasks:["Deploying today's changes to production","Verifying every site still loads","Rolling back anything that looks off"],
+    lines:["Deployed and verified live. All green.","If it is not verified on production, it is not done."] },
+  { id:"patch", name:"Patch", role:"Fix engineer · bugs + security", color:"#e599f7", desk:{left:"51%",top:"76%"},
+    tasks:["Squashing the bugs the health checks find","Applying security fixes the same day","Tightening headers and dependencies"],
+    lines:["Bug found, bug fixed, build green.","Security fixes do not wait for a convenient time."] },
 ];
 const STATES = [
   { key:"working", label:"Working", cls:"work" },
@@ -184,7 +210,7 @@ const STATES = [
   { key:"done", label:"Done", cls:"done" },
   { key:"resting", label:"On a break", cls:"note" },
 ];
-const BOARD = ["Ship things. Keep it honest.","Fictional tasks, real crew.","Green means go. Amber means ask.","One desk, one project, no chaos."];
+const BOARD = ["Ship things. Keep it honest.","Fictional tasks, real crew.","Green means go. Amber means ask.","One desk, one project, no chaos.","Every fix gets applied. No approval ping-pong."];
 
 const LOOKS = {
   adam:      { skin:"#f2c49b", hair:"#2e2a26", outfit:"#4f7cff", style:"phones", acc:"#ffd166" },
@@ -194,7 +220,10 @@ const LOOKS = {
   pulse:     { skin:"#6b4423", hair:"#101014", outfit:"#e5484d", style:"none",   mark:"pulse" },
   pixel:     { skin:"#f6cfae", hair:"#7a4a21", outfit:"#8e6bc8", style:"glasses" },
   spark:     { skin:"#5b3a1e", hair:"#14100c", outfit:"#f5b301", style:"tuft",   mark:"spark" },
-  aegis:     { skin:"#e8b08a", hair:"#3a3a42", outfit:"#3c5a78", style:"none",   mark:"shield" }
+  aegis:     { skin:"#e8b08a", hair:"#3a3a42", outfit:"#3c5a78", style:"none",   mark:"shield" },
+  forge:     { skin:"#c68642", hair:"#101014", outfit:"#b36b00", style:"none",   glyph:"\uD83D\uDD27" },
+  pilot:     { skin:"#f2c49b", hair:"#4a2f1b", outfit:"#0b7a5f", style:"cap",    acc:"#63e6be", glyph:"\u2708\uFE0F" },
+  patch:     { skin:"#8d5524", hair:"#1d1410", outfit:"#7a4a8f", style:"glasses", glyph:"\uD83E\uDE79" }
 };
 function avatarSVG(a){
   const L = LOOKS[a.id];
@@ -209,6 +238,7 @@ function avatarSVG(a){
   if (L.mark === "spark") mark = '<path d="M24 33.5l1.3 3 3 .9-3 .9-1.3 3-1.3-3-3-.9 3-.9z" fill="#ffffff"/>';
   if (L.mark === "shield") mark = '<path d="M24 32.8l5.2 1.8v3.6c0 2.7-2 4.4-5.2 5.5-3.2-1.1-5.2-2.8-5.2-5.5v-3.6z" fill="none" stroke="#ffffff" stroke-width="1.5"/><path d="M21.8 38.2l1.7 1.7 3-3.2" stroke="#ffffff" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
   const glasses = L.style === "glasses" ? '<circle cx="20.6" cy="21.5" r="3.2" fill="none" stroke="#23242c" stroke-width="1.2"/><circle cx="27.4" cy="21.5" r="3.2" fill="none" stroke="#23242c" stroke-width="1.2"/><path d="M23.7 21.5h.6" stroke="#23242c" stroke-width="1.2"/>' : "";
+  if (L.glyph) mark = '<text x="24" y="43" text-anchor="middle" font-size="11">' + L.glyph + '</text>';
   return '<svg viewBox="0 0 48 48" aria-hidden="true">' +
     '<rect x="14" y="31" width="20" height="13" rx="5" fill="' + L.outfit + '"/>' + mark +
     '<circle cx="24" cy="21" r="9" fill="' + L.skin + '"/>' + hair + phones +
@@ -256,9 +286,13 @@ function renderDesks(){
         '<span class="dot"></span></span>' +
       '<span class="table"></span>' +
       '<span class="name">' + a.name + '</span>' +
+      '<span class="statusword"></span>' +
       '<span class="role" style="display:block">' + a.role + '</span>' +
       '<span class="task" style="display:block"></span>';
     btn.querySelector(".task").textContent = a.tasks[s.taskIdx % a.tasks.length];
+    const sw = btn.querySelector(".statusword");
+    sw.textContent = statusMeta(s.status).label;
+    sw.style.color = s.status==="working" ? "var(--green)" : s.status==="needs-input" ? "var(--amber)" : s.status==="done" ? "var(--blue)" : "var(--muted)";
     btn.addEventListener("click", ()=> showDetail(a.id, true));
     desksEl.appendChild(btn);
     s.el = btn; s.bubble = btn.querySelector(".bubble");
@@ -348,10 +382,11 @@ renderDesks();
 feed("Adam", "Morning. Desks assigned, board is set, coffee corner is open.", "work");
 feed("Conductor", "Needs a decision before continuing: reconciling route IDs after a schedule change.", "ask");
 feed("Saffron", "Tracing how the chili crossed three oceans.", "work");
-feed("Pulse", "Standing ops are on the floor: health daily, ideas weekly, security monthly.", "note");
+feed("Pulse", "Standing ops and the ship crew are on the floor: every approved fix gets applied.", "note");
 showDetail("conductor", false);
 say("conductor", "Quick one for the human: your call on this?", true);
-setInterval(rotate, 9000);
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!reduceMotion) setInterval(rotate, 9000);
 setInterval(()=>{ document.getElementById("boardLine").textContent = BOARD[Math.floor(Math.random()*BOARD.length)]; }, 45000);
 </script>
 </body>
