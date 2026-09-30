@@ -45,7 +45,9 @@
   .desk.working .table::after{background:#10331f;box-shadow:0 0 12px rgba(61,220,132,.5) inset}
   .desk.needs-input .table::after{background:#3a2c07;box-shadow:0 0 12px rgba(255,200,87,.55) inset}
   .desk.done .table::after{background:#12293f}
-  .avatar{width:46px;height:46px;margin:0 auto 6px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.05rem;color:#12131a;border:3px solid var(--line);position:relative;transition:transform .3s}
+  .avatar{width:46px;height:46px;margin:0 auto 6px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.05rem;color:#12131a;border:3px solid var(--line);position:relative;transition:transform .3s;overflow:hidden}
+  .avatar svg{width:92%;height:92%;display:block}
+  .walker svg{margin:0 auto}
   .desk:hover .avatar{transform:translateY(-3px)}
   .dot{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg)}
   .working .dot{background:var(--green);animation:pulse 1.6s infinite}
@@ -97,7 +99,6 @@
     .desk{position:relative;left:auto!important;top:auto!important;width:auto}
     .desk .task{font-size:.7rem}
     .bubble{max-width:150px;font-size:.7rem}
-    .walker{display:none}
     .coffee-corner{position:static;margin-top:14px;text-align:center}
     .feed{max-height:320px}
     .dispatch .row{flex-wrap:wrap}
@@ -173,6 +174,26 @@ const STATES = [
 ];
 const BOARD = ["Ship things. Keep it honest.","Fictional tasks, real crew.","Green means go. Amber means ask.","One desk, one project, no chaos."];
 
+const LOOKS = {
+  adam:      { skin:"#f2c49b", hair:"#2e2a26", outfit:"#4f7cff", style:"phones", acc:"#ffd166" },
+  conductor: { skin:"#c68642", hair:"#17181c", outfit:"#e4572e", style:"cap",    acc:"#c8102e" },
+  saffron:   { skin:"#8d5524", hair:"#1d1410", outfit:"#ff9f1c", style:"bun",    acc:"#ff9f1c" },
+  coach:     { skin:"#ffdbac", hair:"#4a2f1b", outfit:"#2ec4b6", style:"band",   acc:"#ef476f" }
+};
+function avatarSVG(a){
+  const L = LOOKS[a.id];
+  let hair = '<path d="M15 21a9 9 0 0 1 18 0z" fill="' + L.hair + '"/>';
+  if (L.style === "bun") hair += '<circle cx="24" cy="10.5" r="4" fill="' + L.hair + '"/>';
+  if (L.style === "cap") hair = '<path d="M15 20a9 9 0 0 1 18 0z" fill="' + L.acc + '"/><rect x="13" y="19" width="22" height="3" rx="1.5" fill="' + L.acc + '"/>';
+  if (L.style === "band") hair += '<rect x="15" y="15.5" width="18" height="3.6" fill="' + L.acc + '"/>';
+  const phones = L.style === "phones" ? '<rect x="13.4" y="19" width="3.4" height="7" rx="1.7" fill="' + L.acc + '"/><rect x="31.2" y="19" width="3.4" height="7" rx="1.7" fill="' + L.acc + '"/>' : "";
+  return '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+    '<rect x="14" y="31" width="20" height="13" rx="5" fill="' + L.outfit + '"/>' +
+    '<circle cx="24" cy="21" r="9" fill="' + L.skin + '"/>' + hair + phones +
+    '<circle cx="20.6" cy="21.5" r="1.3" fill="#23242c"/><circle cx="27.4" cy="21.5" r="1.3" fill="#23242c"/>' +
+    '<path d="M20.8 25.4q3.2 2.4 6.4 0" stroke="#23242c" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>';
+}
+
 const state = {};
 AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0 }; });
 
@@ -209,7 +230,7 @@ function renderDesks(){
     btn.setAttribute("aria-label", a.name + ", " + a.role + ", status " + statusMeta(s.status).label);
     btn.innerHTML =
       '<span class="bubble" role="status"></span>' +
-      '<span class="avatar" style="background:' + a.color + '">' + a.name[0] +
+      '<span class="avatar" style="background:' + a.color + '26;border-color:' + a.color + '">' + avatarSVG(a) +
         '<span class="dot"></span></span>' +
       '<span class="table"></span>' +
       '<span class="name">' + a.name + '</span>' +
@@ -224,6 +245,8 @@ function renderDesks(){
 
 function showDetail(id, announce){
   const s = state[id], a = s.agent;
+  const av = s.el && s.el.querySelector(".avatar");
+  if (announce && av && av.animate) av.animate([{transform:"translateY(0)"},{transform:"translateY(-7px)"},{transform:"translateY(0)"}],{duration:380,easing:"ease-out"});
   detailEl.innerHTML = "";
   const h = document.createElement("h3"); h.textContent = a.name;
   const r = document.createElement("div"); r.textContent = a.role;
@@ -270,13 +293,17 @@ function rotate(){
 
 function stroll(id){
   const a = state[id].agent;
+  const deskEl = state[id].el, coffee = document.querySelector(".coffee-corner");
+  if (!deskEl || !coffee) return;
+  const sx = deskEl.offsetLeft + deskEl.offsetWidth/2 - 21, sy = deskEl.offsetTop + 2;
+  const cx = coffee.offsetLeft + coffee.offsetWidth/2 - 21, cy = coffee.offsetTop - 4;
   const w = document.createElement("div");
   w.className = "walker";
-  w.style.left = a.desk.left; w.style.top = a.desk.top;
-  w.innerHTML = '<span class="avatar" style="background:' + a.color + ';width:36px;height:36px;font-size:.9rem">' + a.name[0] + '</span><div class="wname">' + a.name + '</div>';
+  w.style.left = sx + "px"; w.style.top = sy + "px";
+  w.innerHTML = '<span class="avatar" style="background:' + a.color + '26;border-color:' + a.color + ';width:38px;height:38px">' + avatarSVG(a) + '</span><div class="wname">' + a.name + '</div>';
   walkersEl.appendChild(w);
-  requestAnimationFrame(()=>{ w.style.left = "82%"; w.style.top = "74%"; });
-  setTimeout(()=>{ w.style.left = a.desk.left; w.style.top = a.desk.top; }, 3400);
+  requestAnimationFrame(()=>{ w.style.left = cx + "px"; w.style.top = cy + "px"; });
+  setTimeout(()=>{ w.style.left = sx + "px"; w.style.top = sy + "px"; }, 3400);
   setTimeout(()=>{ w.remove(); if (state[id].status==="resting"){ state[id].status="working"; renderDesks(); } }, 6400);
 }
 
