@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Office · Aaryan's AI crew at work</title>
+<style>
+  :root{
+    --bg:#10131a; --panel:#171b25; --panel2:#1e2431; --line:#2b3245;
+    --ink:#e8ecf4; --muted:#98a2b8; --accent:#ffb454;
+    --green:#3ddc84; --amber:#ffc857; --blue:#5aa9ff; --pink:#ff7aa8;
+    --floor:#232838; --floor2:#1d2230;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;}
+  header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--panel);}
+  header h1{font-size:1.25rem;margin:0;letter-spacing:.4px}
+  header h1 span{color:var(--accent)}
+  .badge{font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+  .clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:0;min-height:calc(100vh - 65px)}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+
+  /* ---------- office floor ---------- */
+  .stage{position:relative;padding:26px;background:
+    radial-gradient(1200px 500px at 20% -10%, #232a3d 0%, transparent 60%),
+    linear-gradient(180deg,#12151d,#0e1118);}
+  .floor{position:relative;height:560px;border-radius:18px;border:1px solid var(--line);
+    background:
+      repeating-linear-gradient(0deg,transparent 0 55px,rgba(255,255,255,.03) 55px 56px),
+      repeating-linear-gradient(90deg,transparent 0 55px,rgba(255,255,255,.03) 55px 56px),
+      linear-gradient(160deg,var(--floor),var(--floor2));
+    overflow:hidden}
+  .zone-label{position:absolute;font-size:.68rem;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);opacity:.8}
+  .rug{position:absolute;border-radius:14px;border:1px dashed rgba(255,255,255,.09);background:rgba(255,255,255,.02)}
+  .plant{position:absolute;font-size:22px;filter:saturate(.9)}
+  .board{position:absolute;top:18px;left:50%;transform:translateX(-50%);background:#f4f1e6;color:#33393f;border-radius:6px;padding:8px 16px;font-size:.78rem;box-shadow:0 6px 18px rgba(0,0,0,.35);text-align:center;min-width:270px}
+  .board b{display:block;font-size:.85rem;margin-bottom:2px}
+  .coffee-corner{position:absolute;right:16px;bottom:16px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:.75rem;color:var(--muted)}
+
+  .desk{position:absolute;width:132px;text-align:center;cursor:pointer;background:none;border:none;color:inherit;font:inherit;padding:0}
+  .desk:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:10px}
+  .desk .table{height:44px;border-radius:9px;background:linear-gradient(180deg,#3a4258,#2c3247);border:1px solid #454f6b;position:relative;box-shadow:0 10px 20px rgba(0,0,0,.35)}
+  .desk .table::after{content:"";position:absolute;left:50%;top:7px;transform:translateX(-50%);width:44px;height:26px;border-radius:4px;background:#0d1420;border:1px solid #54627f}
+  .desk.working .table::after{background:#10331f;box-shadow:0 0 12px rgba(61,220,132,.5) inset}
+  .desk.needs-input .table::after{background:#3a2c07;box-shadow:0 0 12px rgba(255,200,87,.55) inset}
+  .desk.done .table::after{background:#12293f}
+  .avatar{width:46px;height:46px;margin:0 auto 6px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.05rem;color:#12131a;border:3px solid var(--line);position:relative;transition:transform .3s}
+  .desk:hover .avatar{transform:translateY(-3px)}
+  .dot{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg)}
+  .working .dot{background:var(--green);animation:pulse 1.6s infinite}
+  .needs-input .dot{background:var(--amber)}
+  .done .dot{background:var(--blue)}
+  .resting .dot{background:#7a8499}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,132,.5)}70%{box-shadow:0 0 0 8px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+  .desk .name{font-weight:600;font-size:.92rem;margin-top:7px}
+  .desk .role{color:var(--muted);font-size:.74rem}
+  .desk .task{color:var(--muted);font-size:.72rem;margin-top:3px;min-height:2em;line-height:1.35}
+  .bubble{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 8px);background:#fff;color:#20242e;border-radius:10px;padding:6px 10px;font-size:.74rem;max-width:190px;box-shadow:0 8px 20px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s;z-index:5}
+  .bubble::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fff;border-bottom:none}
+  .bubble.show{opacity:1}
+  .bubble.alert{background:var(--amber)}
+  .walker{position:absolute;z-index:4;transition:left 2.6s ease-in-out, top 2.6s ease-in-out;pointer-events:none;text-align:center}
+  .walker .avatar{margin:0 auto}
+  .walker .wname{font-size:.66rem;color:var(--muted);margin-top:2px}
+
+  /* ---------- side rail ---------- */
+  aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  @media (max-width:900px){aside{border-left:none;border-top:1px solid var(--line)}}
+  aside h2{font-size:.78rem;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:18px 18px 8px}
+  .feed{flex:1;overflow-y:auto;padding:0 18px;max-height:430px}
+  .event{border-left:3px solid var(--line);padding:7px 0 7px 12px;margin:0 0 8px;font-size:.86rem;line-height:1.45}
+  .event b{font-weight:600}
+  .event .t{color:var(--muted);font-size:.72rem;display:block}
+  .event.work{border-color:var(--green)} .event.ask{border-color:var(--amber)}
+  .event.done{border-color:var(--blue)} .event.note{border-color:var(--pink)}
+  .detail{margin:4px 18px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:.88rem;line-height:1.5}
+  .detail h3{margin:0 0 4px;font-size:1rem}
+  .detail .status{font-size:.72rem;text-transform:uppercase;letter-spacing:1.2px}
+  .dispatch{border-top:1px solid var(--line);padding:14px 18px 18px}
+  .dispatch label{font-size:.78rem;color:var(--muted);display:block;margin-bottom:6px}
+  .dispatch .row{display:flex;gap:8px}
+  .dispatch select,.dispatch input{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 10px;font:inherit;font-size:.86rem}
+  .dispatch input{flex:1;min-width:0}
+  .dispatch button{background:var(--accent);color:#1c1503;border:none;border-radius:8px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+  footer{padding:12px 22px;color:var(--muted);font-size:.78rem;border-top:1px solid var(--line);background:var(--panel)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Agent <span>Office</span></h1>
+  <span class="badge">Public demo · scripted workday</span>
+  <span class="clock" id="clock"></span>
+</header>
+<main>
+  <section class="stage" aria-label="Office floor">
+    <div class="floor" id="floor">
+      <div class="board"><b>Today on the board</b><span id="boardLine">Ship things. Keep it honest.</span></div>
+      <div class="rug" style="left:4%;top:16%;width:44%;height:52%"></div>
+      <div class="rug" style="right:4%;top:16%;width:40%;height:52%"></div>
+      <span class="zone-label" style="left:6%;top:12%">Build zone</span>
+      <span class="zone-label" style="right:6%;top:12%">Ops zone</span>
+      <span class="plant" style="left:14px;top:14px">🪴</span>
+      <span class="plant" style="right:14px;top:60px">🌿</span>
+      <span class="plant" style="left:14px;bottom:14px">🪴</span>
+      <div class="coffee-corner">☕ Coffee corner · where the hallway chats happen</div>
+      <div id="desks"></div>
+      <div id="walkers"></div>
+    </div>
+  </section>
+
+  <aside>
+    <h2>Activity</h2>
+    <div class="feed" id="feed" aria-live="polite"></div>
+    <h2>Agent detail</h2>
+    <div class="detail" id="detail">Click any desk to inspect an agent.</div>
+    <form class="dispatch" id="dispatch">
+      <label for="note">Drop a note into a room</label>
+      <div class="row">
+        <select id="who" aria-label="Agent"></select>
+        <input id="note" type="text" placeholder="Say something to the crew…" maxlength="140" required>
+        <button type="submit">Send</button>
+      </div>
+    </form>
+  </aside>
+</main>
+<footer>
+  A scripted demo of a real setup: a small crew of AI agents, each with a desk, a project, and a status you can read at a glance.
+  Tasks shown here are fictional. No live data, no private work. Built by Aaryan Chawla's crew.
+</footer>
+
+<script>
+const AGENTS = [
+  { id:"adam", name:"Adam", role:"Coordinator", color:"#ffb454", desk:{left:"10%",top:"30%"},
+    tasks:["Triaging the morning queue","Turning a messy brief into three clear tasks","Checking who is blocked and unblocking them"],
+    lines:["Queue is triaged. Two builds moving, one waiting on a decision.","I do not need more dashboards. I need fewer surprises."] },
+  { id:"conductor", name:"Conductor", role:"Toronto Transit data platform", color:"#5aa9ff", desk:{left:"30%",top:"52%"},
+    tasks:["Validating today's GTFS feed drop","Reconciling route IDs after a schedule change","Watching the ingestion pipeline stay green"],
+    lines:["Feed validated. 0 bad rows, which is the best kind of boring.","A route changed shape overnight. Reconciled it before anyone noticed."] },
+  { id:"saffron", name:"Saffron", role:"Recipe Atlas", color:"#ff7aa8", desk:{left:"56%",top:"30%"},
+    tasks:["Tracing how the chili crossed three oceans","Fact-checking a 500-year-old tomato claim","Matching journeys to dishes people still cook"],
+    lines:["The tomato was feared as poison for 200 years. The receipts check out.","Five journeys mapped. Every stop now has a source."] },
+  { id:"coach", name:"Coach", role:"Health and training", color:"#3ddc84", desk:{left:"74%",top:"52%"},
+    tasks:["Reviewing this week's training load","Keeping sessions shoulder-friendly","Watching the trend line, not the daily noise"],
+    lines:["Consistency beats intensity. Show up, log it, move on.","Posture work is unglamorous and completely worth it."] },
+];
+const STATES = [
+  { key:"working", label:"Working", cls:"work" },
+  { key:"needs-input", label:"Needs input", cls:"ask" },
+  { key:"done", label:"Done", cls:"done" },
+  { key:"resting", label:"On a break", cls:"note" },
+];
+const BOARD = ["Ship things. Keep it honest.","Fictional tasks, real crew.","Green means go. Amber means ask.","One desk, one project, no chaos."];
+
+const state = {};
+AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0 }; });
+
+const desksEl = document.getElementById("desks");
+const walkersEl = document.getElementById("walkers");
+const feedEl = document.getElementById("feed");
+const detailEl = document.getElementById("detail");
+const whoSel = document.getElementById("who");
+
+function now(){ return new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}); }
+function tickClock(){ document.getElementById("clock").textContent = new Date().toLocaleString([], {weekday:"short", hour:"numeric", minute:"2-digit"}); }
+tickClock(); setInterval(tickClock, 20000);
+
+function feed(agentName, text, cls){
+  const d = document.createElement("div");
+  d.className = "event " + cls;
+  d.innerHTML = '<span class="t"></span><b></b> ';
+  d.querySelector(".t").textContent = now();
+  d.querySelector("b").textContent = agentName + " ·";
+  d.append(document.createTextNode(" " + text));
+  feedEl.prepend(d);
+  while (feedEl.children.length > 30) feedEl.lastChild.remove();
+}
+
+function statusMeta(key){ return STATES.find(s=>s.key===key); }
+
+function renderDesks(){
+  desksEl.innerHTML = "";
+  AGENTS.forEach(a=>{
+    const s = state[a.id];
+    const btn = document.createElement("button");
+    btn.className = "desk " + s.status;
+    btn.style.left = a.desk.left; btn.style.top = a.desk.top;
+    btn.setAttribute("aria-label", a.name + ", " + a.role + ", status " + statusMeta(s.status).label);
+    btn.innerHTML =
+      '<span class="bubble" role="status"></span>' +
+      '<span class="avatar" style="background:' + a.color + '">' + a.name[0] +
+        '<span class="dot"></span></span>' +
+      '<span class="table"></span>' +
+      '<span class="name">' + a.name + '</span>' +
+      '<span class="role" style="display:block">' + a.role + '</span>' +
+      '<span class="task" style="display:block"></span>';
+    btn.querySelector(".task").textContent = a.tasks[s.taskIdx % a.tasks.length];
+    btn.addEventListener("click", ()=> showDetail(a.id, true));
+    desksEl.appendChild(btn);
+    s.el = btn; s.bubble = btn.querySelector(".bubble");
+  });
+}
+
+function showDetail(id, announce){
+  const s = state[id], a = s.agent;
+  detailEl.innerHTML = "";
+  const h = document.createElement("h3"); h.textContent = a.name;
+  const r = document.createElement("div"); r.textContent = a.role;
+  const st = document.createElement("div"); st.className = "status";
+  st.textContent = "Status: " + statusMeta(s.status).label;
+  st.style.color = s.status==="working" ? "var(--green)" : s.status==="needs-input" ? "var(--amber)" : s.status==="done" ? "var(--blue)" : "var(--muted)";
+  const t = document.createElement("p"); t.style.margin = "8px 0 0";
+  t.textContent = "On the desk: " + a.tasks[s.taskIdx % a.tasks.length] + ".";
+  detailEl.append(h, r, st, t);
+  if (announce) say(id, a.lines[s.lineIdx % a.lines.length], s.status==="needs-input");
+}
+
+function say(id, text, alert){
+  const s = state[id];
+  if (!s.bubble) return;
+  s.bubble.textContent = text;
+  s.bubble.classList.toggle("alert", !!alert);
+  s.bubble.classList.add("show");
+  clearTimeout(s._bt);
+  s._bt = setTimeout(()=> s.bubble.classList.remove("show"), 4200);
+}
+
+function rotate(){
+  const s = state[AGENTS[Math.floor(Math.random()*AGENTS.length)].id];
+  const roll = Math.random();
+  if (roll < 0.45){
+    s.status = "working"; s.taskIdx++;
+    feed(s.agent.name, s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "work");
+  } else if (roll < 0.62){
+    s.status = "done";
+    feed(s.agent.name, "Wrapped: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "done");
+    say(s.id, "Done. What is next?", false);
+  } else if (roll < 0.8){
+    s.status = "needs-input";
+    feed(s.agent.name, "Needs a decision before continuing: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "ask");
+    say(s.id, "Quick one for the human: your call on this?", true);
+  } else {
+    s.status = "resting";
+    feed(s.agent.name, "Taking five at the coffee corner.", "note");
+    stroll(s.id);
+  }
+  renderDesks(); showDetail(s.id, false);
+}
+
+function stroll(id){
+  const a = state[id].agent;
+  const w = document.createElement("div");
+  w.className = "walker";
+  w.style.left = a.desk.left; w.style.top = a.desk.top;
+  w.innerHTML = '<span class="avatar" style="background:' + a.color + ';width:36px;height:36px;font-size:.9rem">' + a.name[0] + '</span><div class="wname">' + a.name + '</div>';
+  walkersEl.appendChild(w);
+  requestAnimationFrame(()=>{ w.style.left = "82%"; w.style.top = "74%"; });
+  setTimeout(()=>{ w.style.left = a.desk.left; w.style.top = a.desk.top; }, 3400);
+  setTimeout(()=>{ w.remove(); if (state[id].status==="resting"){ state[id].status="working"; renderDesks(); } }, 6400);
+}
+
+AGENTS.forEach(a=>{
+  const o = document.createElement("option");
+  o.value = a.id; o.textContent = a.name;
+  whoSel.appendChild(o);
+});
+document.getElementById("dispatch").addEventListener("submit", e=>{
+  e.preventDefault();
+  const id = whoSel.value, input = document.getElementById("note");
+  const text = input.value.trim(); if (!text) return;
+  feed("You → " + state[id].agent.name, text, "note");
+  say(id, "Got it. On it.", false);
+  state[id].status = "working"; renderDesks(); showDetail(id, false);
+  input.value = "";
+});
+
+renderDesks();
+feed("Adam", "Morning. Desks assigned, board is set, coffee corner is open.", "work");
+feed("Conductor", "Needs a decision before continuing: reconciling route IDs after a schedule change.", "ask");
+feed("Saffron", "Tracing how the chili crossed three oceans.", "work");
+showDetail("conductor", false);
+say("conductor", "Quick one for the human: your call on this?", true);
+setInterval(rotate, 9000);
+setInterval(()=>{ document.getElementById("boardLine").textContent = BOARD[Math.floor(Math.random()*BOARD.length)]; }, 45000);
+</script>
+</body>
+</html>
