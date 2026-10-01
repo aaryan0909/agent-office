@@ -94,6 +94,24 @@
   .walker .avatar{margin:0 auto}
   .walker .wname{font-size:.66rem;color:var(--muted);margin-top:2px}
 
+  /* ---------- characters (Mii-inspired) ---------- */
+  #chars{position:absolute;inset:0;pointer-events:none;z-index:4}
+  .char{position:absolute;width:58px;transform:translate(-50%,-100%);transition:left 3.4s ease-in-out,top 3.4s ease-in-out}
+  .char .bob{animation:idle 2.6s ease-in-out infinite}
+  .char svg{width:100%;height:auto;display:block;filter:drop-shadow(0 5px 5px rgba(0,0,0,.4))}
+  .char.walking .bob{animation:walkbob .32s ease-in-out infinite alternate}
+  .char.walking .legL,.char.walking .legR{transform-box:fill-box;transform-origin:50% 0%}
+  .char.walking .legL{animation:swing .32s ease-in-out infinite alternate}
+  .char.walking .legR{animation:swing .32s ease-in-out infinite alternate-reverse}
+  .char.flip svg{transform:scaleX(-1)}
+  .char.needshop .bob{animation:hop .45s ease-in-out infinite alternate}
+  @keyframes idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+  @keyframes walkbob{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-4px) rotate(2deg)}}
+  @keyframes swing{from{transform:rotate(16deg)}to{transform:rotate(-16deg)}}
+  @keyframes hop{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+  @media (min-width:761px){.desk .avatar{display:none}.desk .bubble{bottom:calc(100% + 58px)}}
+  @media (max-width:760px){#chars{display:none}}
+
   /* ---------- side rail ---------- */
   aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
   @media (max-width:900px){aside{border-left:none;border-top:1px solid var(--line)}}
@@ -161,23 +179,15 @@
   }
   @media (prefers-reduced-motion: reduce){
     .working .dot{animation:none}
-    .walker{transition:none}
     .desk:hover .avatar{transform:none}
-    .floatxp{animation:none}
-    .toast{animation:none}
-    .xpfill,.missionfill{transition:none}
+    .char{transition:none}
+    .char .bob{animation:none}
   }
 </style>
 </head>
 <body>
 <header>
   <h1>Agent <span>Office</span></h1>
-  <div class="hud">
-    <span class="lvl" id="officeLvl">LVL 1</span>
-    <span class="xpbar office"><span class="xpfill" id="officeXp"></span></span>
-    <span class="coins">🪙 <b id="coins">0</b></span>
-    <span class="missions">🎯 <b id="missions">0</b> missions</span>
-  </div>
   <span class="badge">Public demo · scripted workday</span>
   <span class="clock" id="clock"></span>
 </header>
@@ -191,7 +201,7 @@
       <span class="plant" style="left:14px;bottom:14px">🪴</span>
       <div class="coffee-corner">☕ Coffee corner · where the hallway chats happen</div>
       <div id="desks"></div>
-      <div id="walkers"></div>
+      <div id="chars"></div>
       <div id="toasts" aria-live="polite"></div>
     </div>
   </section>
@@ -323,22 +333,7 @@ function avatarSVG(a){
 }
 
 const state = {};
-AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0, xp:0, progress: Math.floor(Math.random()*40) }; });
-
-/* ---------- game state ---------- */
-const office = { xp:0, coins:0, missions:0 };
-const ACHIEVED = {};
-const RANK = ["Rookie","Regular","Pro","Veteran","MVP"];
-function lvlOf(xp){ return 1 + Math.floor(xp/100); }
-function rankOf(xp){ return RANK[Math.min(RANK.length-1, Math.floor(lvlOf(xp)/2))]; }
-function officeLvl(){ return 1 + Math.floor(office.xp/300); }
-
-function updateHUD(){
-  document.getElementById("officeLvl").textContent = "LVL " + officeLvl();
-  document.getElementById("officeXp").style.width = ((office.xp % 300)/3) + "%";
-  document.getElementById("coins").textContent = office.coins;
-  document.getElementById("missions").textContent = office.missions;
-}
+AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0, walking:false }; });
 
 /* ---------- dynamic layout: the floor grows with the crew ---------- */
 function layout(){
@@ -376,62 +371,138 @@ function layout(){
   });
 }
 
-function checkHires(){
+/* Grove hires the next expert on a timer; the floor expands to fit them */
+function hireNext(){
   const hired = AGENTS.filter(a=>a.zone===3).length;
   if (hired >= POOL.length) return;
-  if (officeLvl() < HIRE_AT[hired]) return;
   const p = POOL[hired];
   AGENTS.push(p);
-  state[p.id] = { agent:p, status:"working", taskIdx:0, lineIdx:0, xp:0, progress:25 };
-  layout(); renderDesks();
+  state[p.id] = { agent:p, status:"working", taskIdx:0, lineIdx:0, walking:false };
+  layout(); renderDesks(); buildChars();
   toast("<b>" + p.name + "</b> joined the office. Grove scouted a new " + p.role + ".");
   feed("Grove", "Hired " + p.name + " · " + p.role + ". The floor grows.", "note");
-  say(p.id, "New here. Point me at a mission.", false);
+  say(p.id, "New here. Where do I sit?", false);
+  setTimeout(()=> say("grove", "Desk is yours. Welcome aboard.", false), 2600);
 }
 
 function toast(text){
   const box = document.getElementById("toasts");
   if (!box) return;
   const t = document.createElement("div");
-  t.className = "toast"; t.innerHTML = "🏆 " + text;
+  t.className = "toast"; t.innerHTML = "\uD83C\uDF89 " + text;
   box.appendChild(t);
   setTimeout(()=>{ t.style.opacity = "0"; t.style.transition = "opacity .4s"; setTimeout(()=>t.remove(), 450); }, 4600);
   while (box.children.length > 3) box.firstChild.remove();
 }
 
-function achieve(id, text){
-  if (ACHIEVED[id]) return;
-  ACHIEVED[id] = true;
-  toast(text);
+/* ---------- characters: Mii-inspired figures who live on the floor ---------- */
+function charSVG(a){
+  const L = LOOKS[a.id];
+  let hair = '<path d="M12 22a12 12 0 0 1 24 0z" fill="' + L.hair + '"/>';
+  if (L.style === "bun") hair += '<circle cx="24" cy="7" r="4.6" fill="' + L.hair + '"/>';
+  if (L.style === "cap") hair = '<path d="M12 21a12 12 0 0 1 24 0z" fill="' + L.acc + '"/><rect x="10.5" y="20" width="27" height="3.6" rx="1.8" fill="' + L.acc + '"/>';
+  if (L.style === "band") hair += '<rect x="12.5" y="15.5" width="23" height="4.2" fill="' + L.acc + '"/>';
+  if (L.style === "tuft") hair += '<path d="M17 12l2-5 2 5zM22 10.8L24 5l2 5.8zM27 12l2-5 2 5z" fill="' + L.hair + '"/>';
+  const phones = L.style === "phones" ? '<rect x="10.6" y="19" width="4" height="8.4" rx="2" fill="' + L.acc + '"/><rect x="33.4" y="19" width="4" height="8.4" rx="2" fill="' + L.acc + '"/>' : "";
+  let mark = "";
+  if (L.mark === "pulse") mark = '<path d="M15 52h4.5l1.8-3.8 2.7 7.6 1.8-3.8H33" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+  if (L.mark === "spark") mark = '<path d="M24 46l1.6 3.6 3.6 1.1-3.6 1.1-1.6 3.6-1.6-3.6-3.6-1.1 3.6-1.1z" fill="#ffffff"/>';
+  if (L.mark === "shield") mark = '<path d="M24 45l6 2.1v4.2c0 3.1-2.3 5.1-6 6.3-3.7-1.2-6-3.2-6-6.3v-4.2z" fill="none" stroke="#ffffff" stroke-width="1.6"/><path d="M21.4 51.2l2 2 3.4-3.7" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+  const glasses = L.style === "glasses" ? '<circle cx="19.4" cy="23.5" r="3.8" fill="none" stroke="#23242c" stroke-width="1.3"/><circle cx="28.6" cy="23.5" r="3.8" fill="none" stroke="#23242c" stroke-width="1.3"/><path d="M23.2 23.5h1.6" stroke="#23242c" stroke-width="1.3"/>' : "";
+  if (L.glyph) mark = '<text x="24" y="57" text-anchor="middle" font-size="12">' + L.glyph + '</text>';
+  return '<svg viewBox="0 0 48 84" aria-hidden="true">' +
+    '<g class="legL"><rect x="17.6" y="62" width="5.2" height="14" rx="2" fill="#262c3d"/></g>' +
+    '<g class="legR"><rect x="25.2" y="62" width="5.2" height="14" rx="2" fill="#262c3d"/></g>' +
+    '<ellipse cx="20" cy="78.5" rx="4.4" ry="2.2" fill="#12141c"/><ellipse cx="28" cy="78.5" rx="4.4" ry="2.2" fill="#12141c"/>' +
+    '<rect x="8.6" y="40" width="5.4" height="21" rx="2.7" fill="' + L.outfit + '"/>' +
+    '<rect x="34" y="40" width="5.4" height="21" rx="2.7" fill="' + L.outfit + '"/>' +
+    '<rect x="13" y="36" width="22" height="28" rx="7" fill="' + L.outfit + '"/>' + mark +
+    '<circle cx="24" cy="23" r="12" fill="' + L.skin + '"/>' + hair + phones +
+    '<circle cx="19.6" cy="23.5" r="1.5" fill="#23242c"/><circle cx="28.4" cy="23.5" r="1.5" fill="#23242c"/>' +
+    '<path d="M20.4 28.6q3.6 2.8 7.2 0" stroke="#23242c" stroke-width="1.5" fill="none" stroke-linecap="round"/>' + glasses + '</svg>';
 }
 
-function floatXP(id, text){
-  const s = state[id];
-  if (!s.el) return;
-  const f = document.createElement("span");
-  f.className = "floatxp"; f.textContent = text;
-  s.el.appendChild(f);
-  setTimeout(()=> f.remove(), 1700);
+const charsEl = document.getElementById("chars");
+const chars = {};
+
+function charHome(id){
+  const el = state[id].el;
+  if (!el) return null;
+  return { x: el.offsetLeft + el.offsetWidth/2, y: el.offsetTop + 52 };
 }
 
-function awardMission(id){
-  const s = state[id], a = s.agent;
-  const oldLvl = lvlOf(s.xp);
-  s.xp += 25; s.progress = 0;
-  office.xp += id === "grove" ? 40 : 25; office.coins += 5; office.missions++;
-  floatXP(id, "+25 XP");
-  setTimeout(()=> floatXP(id, "+5 🪙"), 350);
-  const newLvl = lvlOf(s.xp);
-  if (newLvl > oldLvl) toast("<b>" + a.name + "</b> leveled up to LVL " + newLvl + " · " + rankOf(s.xp) + "!");
-  achieve("first", "<b>First mission shipped.</b> The office is awake.");
-  if (office.missions === 10) achieve("ten", "<b>Sprint machine.</b> 10 missions shipped today.");
-  if (office.coins >= 50) achieve("coins", "<b>Treasury.</b> 50 coins earned. Coffee is on the office.");
-  updateHUD();
-  checkHires();
+function buildChars(){
+  AGENTS.forEach(a=>{
+    if (chars[a.id]) return;
+    const c = document.createElement("div");
+    c.className = "char";
+    c.innerHTML = '<div class="bob">' + charSVG(a) + '</div>';
+    charsEl.appendChild(c);
+    chars[a.id] = c;
+  });
+  positionChars();
+}
+
+function positionChars(){
+  AGENTS.forEach(a=>{
+    const c = chars[a.id], s = state[a.id];
+    if (!c || s.walking) return;
+    const h = charHome(a.id);
+    if (!h) return;
+    c.style.left = h.x + "px"; c.style.top = h.y + "px";
+    c.classList.toggle("needshop", s.status === "needs-input");
+    c.classList.remove("flip");
+  });
+}
+
+function walkTo(id, x, y, done){
+  const s = state[id], c = chars[id];
+  if (!c){ if (done) done(); return; }
+  const curX = parseFloat(c.style.left) || 0;
+  c.classList.toggle("flip", x < curX);
+  c.classList.add("walking");
+  s.walking = true;
+  c.style.left = x + "px"; c.style.top = y + "px";
+  setTimeout(()=>{
+    c.classList.remove("walking");
+    s.walking = false;
+    if (done) done();
+  }, 3500);
+}
+
+function floorPoint(){
+  const f = document.getElementById("floor");
+  return { x: f.clientWidth * (0.12 + Math.random()*0.76), y: f.clientHeight * (0.3 + Math.random()*0.55) };
+}
+
+function wander(){
+  const idle = AGENTS.filter(a=> !state[a.id].walking && state[a.id].status !== "needs-input");
+  if (!idle.length) return;
+  const a = idle[Math.floor(Math.random()*idle.length)];
+  const s = state[a.id];
+  const roll = Math.random();
+  let target, pause = 2600;
+  if (roll < 0.4){
+    const coffee = document.querySelector(".coffee-corner");
+    target = { x: coffee.offsetLeft + coffee.offsetWidth/2, y: coffee.offsetTop + 6 };
+  } else if (roll < 0.65){
+    const others = AGENTS.filter(o=> o.id !== a.id && state[o.id].el);
+    const o = others[Math.floor(Math.random()*others.length)];
+    const h = charHome(o.id);
+    target = { x: h.x + 52, y: h.y + 10 };
+    if (Math.random() < 0.6) setTimeout(()=> say(a.id, a.lines[s.lineIdx++ % a.lines.length], false), 3600);
+  } else {
+    target = floorPoint();
+  }
+  walkTo(a.id, target.x, target.y, ()=>{
+    setTimeout(()=>{
+      const h = charHome(a.id);
+      if (h) walkTo(a.id, h.x, h.y, ()=> positionChars());
+    }, pause);
+  });
 }
 
 const desksEl = document.getElementById("desks");
-const walkersEl = document.getElementById("walkers");
 const feedEl = document.getElementById("feed");
 const detailEl = document.getElementById("detail");
 const whoSel = document.getElementById("who");
@@ -463,16 +534,13 @@ function renderDesks(){
     btn.setAttribute("aria-label", a.name + ", " + a.role + ", status " + statusMeta(s.status).label);
     btn.innerHTML =
       '<span class="bubble" role="status"></span>' +
-      '<span class="lvlbadge">LVL ' + lvlOf(s.xp) + '</span>' +
       '<span class="avatar" style="background:' + a.color + '26;border-color:' + a.color + '">' + avatarSVG(a) +
         '<span class="dot"></span></span>' +
       '<span class="table"></span>' +
       '<span class="name">' + a.name + '</span>' +
       '<span class="statusword"></span>' +
-      '<span class="role" style="display:block">' + a.role + ' · ' + rankOf(s.xp) + '</span>' +
-      '<span class="task" style="display:block"></span>' +
-      '<span class="missionbar"><span class="missionfill" style="width:' + Math.min(100,s.progress) + '%"></span></span>' +
-      '<span class="xpbar mine"><span class="xpfill mine" style="width:' + (s.xp % 100) + '%"></span></span>';
+      '<span class="role" style="display:block">' + a.role + '</span>' +
+      '<span class="task" style="display:block"></span>';
     btn.querySelector(".task").textContent = a.tasks[s.taskIdx % a.tasks.length];
     const sw = btn.querySelector(".statusword");
     sw.textContent = statusMeta(s.status).label;
@@ -482,13 +550,15 @@ function renderDesks(){
     s.el = btn; s.bubble = btn.querySelector(".bubble");
   });
   syncWho();
-  updateHUD();
+  positionChars();
 }
 
 function showDetail(id, announce){
   const s = state[id], a = s.agent;
   const av = s.el && s.el.querySelector(".avatar");
   if (announce && av && av.animate) av.animate([{transform:"translateY(0)"},{transform:"translateY(-7px)"},{transform:"translateY(0)"}],{duration:380,easing:"ease-out"});
+  const cb = chars[id] && chars[id].querySelector(".bob");
+  if (announce && cb && cb.animate) cb.animate([{transform:"translateY(0)"},{transform:"translateY(-9px)"},{transform:"translateY(0)"}],{duration:380,easing:"ease-out"});
   detailEl.innerHTML = "";
   const h = document.createElement("h3"); h.textContent = a.name;
   const r = document.createElement("div"); r.textContent = a.role;
@@ -497,9 +567,7 @@ function showDetail(id, announce){
   st.style.color = s.status==="working" ? "var(--green)" : s.status==="needs-input" ? "var(--amber)" : s.status==="done" ? "var(--blue)" : "var(--muted)";
   const t = document.createElement("p"); t.style.margin = "8px 0 0";
   t.textContent = "On the desk: " + a.tasks[s.taskIdx % a.tasks.length] + ".";
-  const g = document.createElement("div"); g.className = "status"; g.style.marginTop = "8px"; g.style.color = "var(--muted)";
-  g.textContent = "Level " + lvlOf(s.xp) + " · " + rankOf(s.xp) + " · " + (s.xp % 100) + "/100 XP · mission " + Math.min(100, Math.round(s.progress)) + "%";
-  detailEl.append(h, r, st, t, g);
+  detailEl.append(h, r, st, t);
   if (announce) say(id, a.lines[s.lineIdx % a.lines.length], s.status==="needs-input");
 }
 
@@ -517,23 +585,12 @@ function rotate(){
   const s = state[AGENTS[Math.floor(Math.random()*AGENTS.length)].id];
   const roll = Math.random();
   if (roll < 0.45){
-    s.status = "working";
-    s.progress += 25 + Math.random()*30;
-    if (s.progress >= 100){
-      s.taskIdx++;
-      s.status = "done";
-      feed(s.agent.name, "Shipped: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "done");
-      say(s.id, "Done. What is next?", false);
-      awardMission(s.id);
-    } else {
-      feed(s.agent.name, s.agent.tasks[s.taskIdx % s.agent.tasks.length] + " · " + Math.min(100, Math.round(s.progress)) + "%.", "work");
-    }
+    s.status = "working"; s.taskIdx++;
+    feed(s.agent.name, s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "work");
   } else if (roll < 0.62){
-    s.taskIdx++;
     s.status = "done";
     feed(s.agent.name, "Wrapped: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "done");
     say(s.id, "Done. What is next?", false);
-    awardMission(s.id);
   } else if (roll < 0.8){
     s.status = "needs-input";
     feed(s.agent.name, "Needs a decision before continuing: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "ask");
@@ -541,25 +598,15 @@ function rotate(){
   } else {
     s.status = "resting";
     feed(s.agent.name, "Taking five at the coffee corner.", "note");
-    stroll(s.id);
+    const coffee = document.querySelector(".coffee-corner");
+    if (coffee && !s.walking) walkTo(s.id, coffee.offsetLeft + coffee.offsetWidth/2, coffee.offsetTop + 6, ()=>{
+      setTimeout(()=>{
+        const h = charHome(s.id);
+        if (h) walkTo(s.id, h.x, h.y, ()=>{ if (state[s.id].status==="resting"){ state[s.id].status="working"; renderDesks(); } positionChars(); });
+      }, 2400);
+    });
   }
   renderDesks(); showDetail(s.id, false);
-}
-
-function stroll(id){
-  const a = state[id].agent;
-  const deskEl = state[id].el, coffee = document.querySelector(".coffee-corner");
-  if (!deskEl || !coffee) return;
-  const sx = deskEl.offsetLeft + deskEl.offsetWidth/2 - 21, sy = deskEl.offsetTop + 2;
-  const cx = coffee.offsetLeft + coffee.offsetWidth/2 - 21, cy = coffee.offsetTop - 4;
-  const w = document.createElement("div");
-  w.className = "walker";
-  w.style.left = sx + "px"; w.style.top = sy + "px";
-  w.innerHTML = '<span class="avatar" style="background:' + a.color + '26;border-color:' + a.color + ';width:38px;height:38px">' + avatarSVG(a) + '</span><div class="wname">' + a.name + '</div>';
-  walkersEl.appendChild(w);
-  requestAnimationFrame(()=>{ w.style.left = cx + "px"; w.style.top = cy + "px"; });
-  setTimeout(()=>{ w.style.left = sx + "px"; w.style.top = sy + "px"; }, 3400);
-  setTimeout(()=>{ w.remove(); if (state[id].status==="resting"){ state[id].status="working"; renderDesks(); } }, 6400);
 }
 
 AGENTS.forEach(a=>{
@@ -592,15 +639,26 @@ document.getElementById("dispatch").addEventListener("submit", e=>{
 layout();
 window.addEventListener("resize", ()=>{ layout(); renderDesks(); });
 renderDesks();
+buildChars();
 feed("Adam", "Morning. Desks assigned, board is set, coffee corner is open.", "work");
-feed("Grove", "Watching capacity. New experts join as the office levels up.", "note");
+feed("Grove", "Watching capacity. New experts join as the office grows.", "note");
 feed("Conductor", "Needs a decision before continuing: reconciling route IDs after a schedule change.", "ask");
 feed("Saffron", "Tracing how the chili crossed three oceans.", "work");
 feed("Pulse", "Standing ops and the ship crew are on the floor: every approved fix gets applied.", "note");
 showDetail("conductor", false);
 say("conductor", "Quick one for the human: your call on this?", true);
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-if (!reduceMotion) setInterval(rotate, 9000);
+if (!reduceMotion){
+  setInterval(rotate, 9000);
+  setInterval(wander, 7000);
+  setTimeout(wander, 2500);
+  /* Grove grows the crew: one new expert every ~50s until the pool is full */
+  let hireTimer = setInterval(()=>{
+    hireNext();
+    if (AGENTS.filter(a=>a.zone===3).length >= POOL.length) clearInterval(hireTimer);
+  }, 50000);
+  setTimeout(hireNext, 30000);
+}
 setInterval(()=>{ document.getElementById("boardLine").textContent = BOARD[Math.floor(Math.random()*BOARD.length)]; }, 45000);
 </script>
 </body>
