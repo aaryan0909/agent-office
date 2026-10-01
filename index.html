@@ -82,14 +82,28 @@
   .done .dot{background:var(--blue)}
   .resting .dot{background:#7a8499}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,132,.5)}70%{box-shadow:0 0 0 8px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
-  .desk .name{display:block;font-weight:600;font-size:.92rem;margin-top:7px}
+  .desk .name{display:block;font-weight:600;font-size:.92rem;margin-top:0}
   .statusword{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:1.1px;margin-top:3px;font-weight:700}
   .desk .role{color:var(--muted);font-size:.78rem}
   .desk .task{color:var(--muted);font-size:.78rem;margin-top:3px;min-height:2em;line-height:1.35}
-  .bubble{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 8px);background:#fff;color:#20242e;border-radius:10px;padding:6px 10px;font-size:.74rem;max-width:190px;box-shadow:0 8px 20px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s;z-index:5}
-  .bubble::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fff;border-bottom:none}
-  .bubble.show{opacity:1}
-  .bubble.alert{background:var(--amber)}
+  .desk .plate{display:block;margin-top:7px;background:rgba(10,13,20,.62);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:6px 8px 8px}
+  .desk .task{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .char{pointer-events:auto;cursor:pointer}
+  /* ---------- status strip ---------- */
+  .statusbar{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:9px 14px;margin:0 0 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;font-size:.82rem;color:var(--muted)}
+  .statusbar b{color:var(--ink)}
+  .statusbar .hint{margin-left:auto;font-size:.76rem}
+  /* ---------- character info pop-up ---------- */
+  .infocard{position:absolute;width:248px;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:12px 14px;box-shadow:0 16px 40px rgba(0,0,0,.55);z-index:40;animation:icpop .28s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes icpop{from{opacity:0;transform:scale(.9) translateY(6px)}to{opacity:1;transform:none}}
+  .infocard .ic-close{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);font-size:1.05rem;cursor:pointer;line-height:1;padding:4px}
+  .ic-head{display:flex;gap:10px;align-items:center}
+  .ic-av{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
+  .ic-av svg{width:92%;height:92%}
+  .ic-name{display:block;font-weight:700;font-size:.95rem}
+  .ic-role{display:block;color:var(--muted);font-size:.76rem;line-height:1.3}
+  .ic-status{font-size:.72rem;text-transform:uppercase;letter-spacing:1.1px;font-weight:700;margin-top:9px}
+  .ic-task{font-size:.84rem;line-height:1.45;margin-top:4px}
   .walker{position:absolute;z-index:4;transition:left 2.6s ease-in-out, top 2.6s ease-in-out;pointer-events:none;text-align:center}
   .walker .avatar{margin:0 auto}
   .walker .wname{font-size:.66rem;color:var(--muted);margin-top:2px}
@@ -109,7 +123,7 @@
   @keyframes walkbob{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-4px) rotate(2deg)}}
   @keyframes swing{from{transform:rotate(16deg)}to{transform:rotate(-16deg)}}
   @keyframes hop{from{transform:translateY(0)}to{transform:translateY(-8px)}}
-  @media (min-width:761px){.desk .avatar{display:none}.desk .bubble{bottom:calc(100% + 58px)}}
+  @media (min-width:761px){.desk .avatar{display:none}}
   @media (max-width:760px){#chars{display:none}}
 
   /* ---------- side rail ---------- */
@@ -166,7 +180,6 @@
     #desks{display:grid;grid-template-columns:1fr 1fr;gap:16px 10px}
     .desk{position:relative;left:auto!important;top:auto!important;width:auto}
     .desk .task{font-size:.7rem}
-    .bubble{max-width:150px;font-size:.7rem}
     .coffee-corner{position:static;margin-top:14px;text-align:center}
     .feed{max-height:320px}
     .dispatch .row{flex-wrap:wrap}
@@ -193,6 +206,7 @@
 </header>
 <main>
   <section class="stage" aria-label="Office floor">
+    <div class="statusbar" id="statusbar" aria-live="polite"></div>
     <div class="floor" id="floor">
       <div class="board"><b>Today on the board</b><span id="boardLine">Ship things. Keep it honest.</span></div>
       <div id="zones"></div>
@@ -203,6 +217,7 @@
       <div id="desks"></div>
       <div id="chars"></div>
       <div id="toasts" aria-live="polite"></div>
+      <div class="infocard" id="infocard" hidden></div>
     </div>
   </section>
 
@@ -361,15 +376,25 @@ function layout(){
   const zones = {};
   AGENTS.forEach(a=>{ (zones[a.zone] = zones[a.zone] || []).push(a); });
   const rows = Object.keys(zones).sort((x,y)=>x-y);
-  const rowH = 330, head = 120;
-  const floorH = rows.length*rowH + head;
-  const rowIdx = {}; rows.forEach((z,i)=>{ rowIdx[z] = i; });
-  const topPx = z => 60 + rowIdx[z]*rowH;
+  /* Each zone row is tall enough for its desks, their full text plates,
+     and a clear walking lane underneath, so nothing ever gets clipped
+     by the next row or the floor edge. */
+  const head = 120;
+  const rowH = {}, topPxMap = {};
+  let acc = head;
+  rows.forEach(z=>{
+    const subs = Math.ceil(zones[z].length / 4);
+    rowH[z] = 375 + (subs - 1) * 210;
+    topPxMap[z] = acc;
+    acc += rowH[z];
+  });
+  const floorH = acc + 24;
+  const topPx = z => topPxMap[z];
   rows.forEach(z=>{
     const row = zones[z];
     row.forEach((a,i)=>{
       const col = i % 4, sub = Math.floor(i/4);
-      a.desk = { left: cols[col] + "%", top: ((topPx(z) + sub*150) / floorH * 100) + "%" };
+      a.desk = { left: cols[col] + "%", top: ((topPx(z) + 64 + sub*210) / floorH * 100) + "%" };
     });
   });
   const floorEl = document.getElementById("floor");
@@ -383,10 +408,10 @@ function layout(){
   rows.forEach(z=>{
     const rug = document.createElement("div");
     rug.className = "rug";
-    rug.style.cssText = "left:4%;top:" + ((topPx(z)+42)/floorH*100) + "%;width:92%;height:" + ((rowH-105)/floorH*100) + "%";
+    rug.style.cssText = "left:4%;top:" + ((topPx(z)+46)/floorH*100) + "%;width:92%;height:" + ((rowH[z]-84)/floorH*100) + "%";
     const lab = document.createElement("span");
     lab.className = "zone-label";
-    lab.style.cssText = "left:6%;top:" + ((topPx(z)-24)/floorH*100) + "%";
+    lab.style.cssText = "left:5%;top:" + ((topPx(z)+16)/floorH*100) + "%";
     lab.textContent = ZONE_NAMES[z];
     zEl.append(rug, lab);
   });
@@ -402,8 +427,7 @@ function hireNext(){
   layout(); renderDesks(); buildChars();
   toast("<b>" + p.name + "</b> joined the office. Grove scouted a new " + p.role + ".");
   feed("Grove", "Hired " + p.name + " · " + p.role + ". The floor grows.", "note");
-  say(p.id, "New here. Where do I sit?", false);
-  setTimeout(()=> say("grove", "Desk is yours. Welcome aboard.", false), 2600);
+  popCard(p.id, false);
 }
 
 function toast(text){
@@ -458,6 +482,8 @@ function buildChars(){
     const c = document.createElement("div");
     c.className = "char";
     c.innerHTML = '<div class="bob">' + charSVG(a) + '</div>';
+    c.title = a.name + " · " + a.role;
+    c.addEventListener("click", ()=> showDetail(a.id, true));
     charsEl.appendChild(c);
     chars[a.id] = c;
   });
@@ -474,6 +500,7 @@ function positionChars(){
     c.classList.toggle("needshop", s.status === "needs-input");
     c.classList.remove("flip");
   });
+  if (typeof cardFor !== "undefined" && cardFor) placeCard(cardFor);
 }
 
 function walkTo(id, x, y, done){
@@ -572,24 +599,40 @@ function renderDesks(){
     btn.style.left = a.desk.left; btn.style.top = a.desk.top;
     btn.setAttribute("aria-label", a.name + ", " + a.role + ", status " + statusMeta(s.status).label);
     btn.innerHTML =
-      '<span class="bubble" role="status"></span>' +
       '<span class="avatar" style="background:' + a.color + '26;border-color:' + a.color + '">' + avatarSVG(a) +
         '<span class="dot"></span></span>' +
       '<span class="table"></span>' +
-      '<span class="name">' + a.name + '</span>' +
-      '<span class="statusword"></span>' +
-      '<span class="role" style="display:block">' + a.role + '</span>' +
-      '<span class="task" style="display:block"></span>';
+      '<span class="plate">' +
+        '<span class="name">' + a.name + '</span>' +
+        '<span class="statusword"></span>' +
+        '<span class="role" style="display:block">' + a.role + '</span>' +
+        '<span class="task"></span>' +
+      '</span>';
     btn.querySelector(".task").textContent = a.tasks[s.taskIdx % a.tasks.length];
     const sw = btn.querySelector(".statusword");
     sw.textContent = statusMeta(s.status).label;
     sw.style.color = s.status==="working" ? "var(--green)" : s.status==="needs-input" ? "var(--amber)" : s.status==="done" ? "var(--blue)" : "var(--muted)";
     btn.addEventListener("click", ()=> showDetail(a.id, true));
     desksEl.appendChild(btn);
-    s.el = btn; s.bubble = btn.querySelector(".bubble");
+    s.el = btn;
   });
   syncWho();
+  updateStatusbar();
   positionChars();
+}
+
+function updateStatusbar(){
+  const sb = document.getElementById("statusbar");
+  if (!sb) return;
+  const counts = { "working":0, "needs-input":0, "done":0, "resting":0 };
+  AGENTS.forEach(a=>{ counts[state[a.id].status]++; });
+  const dot = c => '<span style="color:' + c + '">●</span> ';
+  sb.innerHTML =
+    dot("var(--green)") + "<b>" + counts.working + "</b>&nbsp;working &nbsp;·&nbsp;" +
+    dot("var(--amber)") + "<b>" + counts["needs-input"] + "</b>&nbsp;needs input &nbsp;·&nbsp;" +
+    dot("var(--blue)") + "<b>" + counts.done + "</b>&nbsp;done &nbsp;·&nbsp;" +
+    dot("#7a8499") + "<b>" + counts.resting + "</b>&nbsp;resting" +
+    '<span class="hint">Click any character to see their card</span>';
 }
 
 function showDetail(id, announce){
@@ -607,18 +650,63 @@ function showDetail(id, announce){
   const t = document.createElement("p"); t.style.margin = "8px 0 0";
   t.textContent = "On the desk: " + a.tasks[s.taskIdx % a.tasks.length] + ".";
   detailEl.append(h, r, st, t);
-  if (announce) say(id, a.lines[s.lineIdx % a.lines.length], s.status==="needs-input");
+  if (announce) popCard(id, true);
 }
 
-function say(id, text, alert){
-  const s = state[id];
-  if (!s.bubble) return;
-  s.bubble.textContent = text;
-  s.bubble.classList.toggle("alert", !!alert);
-  s.bubble.classList.add("show");
-  clearTimeout(s._bt);
-  s._bt = setTimeout(()=> s.bubble.classList.remove("show"), 4200);
+/* ---------- character info pop-up: the card appears with the character ---------- */
+let cardFor = null, cardTimer = null;
+const cardEl = document.getElementById("infocard");
+
+function popCard(id, sticky){
+  const s = state[id], a = s && s.agent;
+  if (!a) return;
+  cardFor = id;
+  const col = s.status==="working" ? "var(--green)" : s.status==="needs-input" ? "var(--amber)" : s.status==="done" ? "var(--blue)" : "var(--muted)";
+  cardEl.innerHTML =
+    '<button class="ic-close" aria-label="Close card">×</button>' +
+    '<div class="ic-head"><span class="ic-av" style="background:' + a.color + '26;border-color:' + a.color + '">' + avatarSVG(a) + '</span>' +
+    '<span><span class="ic-name">' + a.name + '</span><span class="ic-role">' + a.role + '</span></span></div>' +
+    '<div class="ic-status" style="color:' + col + '">● ' + statusMeta(s.status).label + '</div>' +
+    '<div class="ic-task">On the desk: ' + a.tasks[s.taskIdx % a.tasks.length] + '.</div>';
+  cardEl.hidden = false;
+  placeCard(id);
+  clearTimeout(cardTimer);
+  if (!sticky) cardTimer = setTimeout(hideCard, 6500);
 }
+
+function placeCard(id){
+  if (cardFor !== id || cardEl.hidden) return;
+  const f = document.getElementById("floor");
+  const s = state[id];
+  if (window.matchMedia("(max-width:760px)").matches){
+    cardEl.style.left = "8px"; cardEl.style.right = "8px";
+    cardEl.style.top = ""; cardEl.style.bottom = "8px"; cardEl.style.width = "auto";
+    return;
+  }
+  cardEl.style.right = ""; cardEl.style.bottom = ""; cardEl.style.width = "248px";
+  let cx = null, feetY = null;
+  const c = chars[id];
+  if (c && c.style.left){ cx = parseFloat(c.style.left); feetY = parseFloat(c.style.top); }
+  else if (s.el){ cx = s.el.offsetLeft + s.el.offsetWidth/2; feetY = s.el.offsetTop + 52; }
+  if (cx === null) return;
+  const cw = 248, chh = cardEl.offsetHeight || 130;
+  const left = Math.min(Math.max(cx - cw/2, 8), Math.max(f.clientWidth - cw - 8, 8));
+  let top = feetY - 101 - chh - 12;
+  if (top < 8) top = feetY + 16;
+  top = Math.min(top, Math.max(f.clientHeight - chh - 8, 8));
+  cardEl.style.left = left + "px";
+  cardEl.style.top = Math.max(top, 8) + "px";
+}
+
+function hideCard(){
+  cardEl.hidden = true;
+  cardFor = null;
+  clearTimeout(cardTimer);
+}
+cardEl.addEventListener("click", e=>{ if (e.target.classList.contains("ic-close")) hideCard(); });
+document.getElementById("floor").addEventListener("click", e=>{
+  if (e.target.id === "floor" || e.target.classList.contains("rug")) hideCard();
+});
 
 function rotate(){
   const s = state[AGENTS[Math.floor(Math.random()*AGENTS.length)].id];
@@ -629,11 +717,9 @@ function rotate(){
   } else if (roll < 0.62){
     s.status = "done";
     feed(s.agent.name, "Wrapped: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "done");
-    say(s.id, "Done. What is next?", false);
   } else if (roll < 0.8){
     s.status = "needs-input";
     feed(s.agent.name, "Needs a decision before continuing: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "ask");
-    say(s.id, "Quick one for the human: your call on this?", true);
   } else {
     s.status = "resting";
     feed(s.agent.name, "Taking five at the coffee corner.", "note");
@@ -654,6 +740,8 @@ function rotate(){
     }
   }
   renderDesks(); showDetail(s.id, false);
+  /* when a character pops up needing input, their card pops up with them */
+  if (s.status === "needs-input") popCard(s.id, false);
 }
 
 AGENTS.forEach(a=>{
@@ -678,7 +766,7 @@ document.getElementById("dispatch").addEventListener("submit", e=>{
   const id = whoSel.value, input = document.getElementById("note");
   const text = input.value.trim(); if (!text) return;
   feed("You → " + state[id].agent.name, text, "note");
-  say(id, "Got it. On it.", false);
+  popCard(id, false);
   state[id].status = "working"; renderDesks(); showDetail(id, false);
   input.value = "";
 });
@@ -694,7 +782,7 @@ feed("Saffron", "Tracing how the chili crossed three oceans.", "work");
 feed("Pulse", "Standing ops and the ship crew are on the floor: every approved fix gets applied.", "note");
 feed("Saffron", "The Recipe Atlas studio is open downstairs: Polo, Palate, Compass, Simmer and Ember are researching fifty ingredient journeys.", "note");
 showDetail("conductor", false);
-say("conductor", "Quick one for the human: your call on this?", true);
+setTimeout(()=> popCard("conductor", false), 1400);
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (!reduceMotion){
   setInterval(rotate, 9000);
