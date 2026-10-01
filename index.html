@@ -234,9 +234,9 @@ const AGENTS = [
   { id:"conductor", name:"Conductor", role:"Toronto Transit data platform", color:"#5aa9ff", desk:{left:"28.5%",top:"22%"},
     tasks:["Validating today's GTFS feed drop","Reconciling route IDs after a schedule change","Watching the ingestion pipeline stay green"],
     lines:["Feed validated. 0 bad rows, which is the best kind of boring.","A route changed shape overnight. Reconciled it before anyone noticed."] },
-  { id:"saffron", name:"Saffron", role:"Recipe Atlas", color:"#ff7aa8", desk:{left:"51%",top:"22%"},
-    tasks:["Tracing how the chili crossed three oceans","Fact-checking a 500-year-old tomato claim","Matching journeys to dishes people still cook"],
-    lines:["The tomato was feared as poison for 200 years. The receipts check out.","Five journeys mapped. Every stop now has a source."] },
+  { id:"saffron", name:"Saffron", role:"Recipe Atlas studio lead", color:"#ff7aa8", desk:{left:"51%",top:"22%"},
+    tasks:["Setting the research queue for fifty ingredients","Holding the quality bar on every journey","Matching journeys to the dishes that prove them"],
+    lines:["The studio is open. Fifty ingredients on the board, and every stop needs a source.","The tomato was feared as poison for 200 years. The receipts check out."] },
   { id:"coach", name:"Coach", role:"Health and training", color:"#3ddc84", desk:{left:"73.5%",top:"22%"},
     tasks:["Reviewing this week's training load","Keeping sessions shoulder-friendly","Watching the trend line, not the daily noise"],
     lines:["Consistency beats intensity. Show up, log it, move on.","Posture work is unglamorous and completely worth it."] },
@@ -264,6 +264,21 @@ const AGENTS = [
   { id:"grove", name:"Grove", role:"Talent + capacity", color:"#f97316", desk:{left:"73.5%",top:"76%"},
     tasks:["Scouting experts for open missions","Balancing workload across the floor","Onboarding each new specialist"],
     lines:["A new expert joins when the office earns it.","Capacity is a feature. I keep it ahead of demand."] },
+  { id:"polo", name:"Polo", role:"Food historian · Atlas studio", color:"#38bdf8", desk:{left:"6%",top:"76%"},
+    tasks:["Tracing black pepper from the Malabar Coast to Rome","Checking when the tomato actually reached Naples","Reading a 400-year-old account of a sugar mill"],
+    lines:["Every ingredient has a smuggling story. I find them.","Dates first, legends second. The legends are usually wrong."] },
+  { id:"palate", name:"Palate", role:"Editor · Atlas studio", color:"#f472b6", desk:{left:"28.5%",top:"76%"},
+    tasks:["Rewriting the saffron stop so it reads like a story","Cutting a stop note down to the good part","Making sure every claim on the page has a source"],
+    lines:["A stop is not a stop until you know how they used it.","Shorter, truer, tastier. In that order."] },
+  { id:"compass", name:"Compass", role:"Cartographer · Atlas studio", color:"#4ade80", desk:{left:"51%",top:"76%"},
+    tasks:["Plotting the vanilla route out of Mexico","Checking a stop's coordinates against the map","Drawing the arc where tea crossed the mountains"],
+    lines:["A route you cannot read is just decoration.","Coordinates checked twice. Maps lie when you let them."] },
+  { id:"simmer", name:"Simmer", role:"Recipe scout · Atlas studio", color:"#fb923c", desk:{left:"73.5%",top:"76%"},
+    tasks:["Picking the one dish that proves what Goa did to chili","Arguing why this dish, not the famous one","Shortlisting highlight dishes for the coffee route"],
+    lines:["One dish per stop, and it has to earn its place.","If the dish does not show the ingredient, it does not ship."] },
+  { id:"ember", name:"Ember", role:"Studio engineer · Atlas studio", color:"#f87171", desk:{left:"6%",top:"76%"},
+    tasks:["Wiring the new journey data into the map","Making the timeline scrubber behave on phones","Shipping this week's researched journeys"],
+    lines:["Data in, build green, live and verified.","The map is only as good as the data under it."] },
 ];
 /* Experts Grove can hire as the office levels up (unlocked at office LVL 2-5) */
 const POOL = [
@@ -281,8 +296,8 @@ const POOL = [
     lines:["Posted where the users are. Watching the replies.","Visibility is earned, then amplified."] },
 ];
 const HIRE_AT = [2,3,4,5];
-const ZONE_NAMES = ["Project crew","Standing ops","Ship crew","New hires"];
-const ZONE_OF = {adam:0,conductor:0,saffron:0,coach:0,pulse:1,pixel:1,spark:1,aegis:1,forge:2,pilot:2,patch:2,grove:2};
+const ZONE_NAMES = ["Project crew","Standing ops","Ship crew","New hires","Recipe Atlas studio"];
+const ZONE_OF = {adam:0,conductor:0,coach:0,pulse:1,pixel:1,spark:1,aegis:1,forge:2,pilot:2,patch:2,grove:2,saffron:4,polo:4,palate:4,compass:4,simmer:4,ember:4};
 AGENTS.forEach(a=>{ a.zone = ZONE_OF[a.id]; });
 POOL.forEach(a=>{ a.zone = 3; });
 const STATES = [
@@ -309,7 +324,12 @@ const LOOKS = {
   scribe:    { skin:"#f2c49b", hair:"#4a2f1b", outfit:"#0369a1", style:"glasses" },
   mirror:    { skin:"#8d5524", hair:"#1d1410", outfit:"#4d7c0f", style:"cap",    acc:"#a3e635" },
   fable:     { skin:"#ffdbac", hair:"#7a4a21", outfit:"#a21caf", style:"bun" },
-  beacon:    { skin:"#c68642", hair:"#17181c", outfit:"#b45309", style:"band",   acc:"#fbbf24" }
+  beacon:    { skin:"#c68642", hair:"#17181c", outfit:"#b45309", style:"band",   acc:"#fbbf24" },
+  polo:      { skin:"#f6cfae", hair:"#17181c", outfit:"#0e7490", style:"none",   glyph:"\uD83D\uDDFA\uFE0F" },
+  palate:    { skin:"#8d5524", hair:"#1d1410", outfit:"#9d174d", style:"bun",    glyph:"\u270D\uFE0F" },
+  compass:   { skin:"#ffdbac", hair:"#4a2f1b", outfit:"#166534", style:"glasses", glyph:"\uD83E\uDDED" },
+  simmer:    { skin:"#c68642", hair:"#101014", outfit:"#92400e", style:"band",   acc:"#fb923c", glyph:"\uD83C\uDF72" },
+  ember:     { skin:"#f2c49b", hair:"#7a1f1f", outfit:"#991b1b", style:"none",   glyph:"\uD83D\uDD25" }
 };
 function avatarSVG(a){
   const L = LOOKS[a.id];
@@ -343,7 +363,8 @@ function layout(){
   const rows = Object.keys(zones).sort((x,y)=>x-y);
   const rowH = 330, head = 120;
   const floorH = rows.length*rowH + head;
-  const topPx = z => 60 + z*rowH;
+  const rowIdx = {}; rows.forEach((z,i)=>{ rowIdx[z] = i; });
+  const topPx = z => 60 + rowIdx[z]*rowH;
   rows.forEach(z=>{
     const row = zones[z];
     row.forEach((a,i)=>{
@@ -645,6 +666,7 @@ feed("Grove", "Watching capacity. New experts join as the office grows.", "note"
 feed("Conductor", "Needs a decision before continuing: reconciling route IDs after a schedule change.", "ask");
 feed("Saffron", "Tracing how the chili crossed three oceans.", "work");
 feed("Pulse", "Standing ops and the ship crew are on the floor: every approved fix gets applied.", "note");
+feed("Saffron", "The Recipe Atlas studio is open downstairs: Polo, Palate, Compass, Simmer and Ember are researching fifty ingredient journeys.", "note");
 showDetail("conductor", false);
 say("conductor", "Quick one for the human: your call on this?", true);
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
