@@ -353,7 +353,7 @@ function avatarSVG(a){
 }
 
 const state = {};
-AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0, walking:false }; });
+AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0, walking:false, away:false }; });
 
 /* ---------- dynamic layout: the floor grows with the crew ---------- */
 function layout(){
@@ -373,7 +373,7 @@ function layout(){
     });
   });
   const floorEl = document.getElementById("floor");
-  if (window.matchMedia("(min-width:1100px)").matches){
+  if (window.matchMedia("(min-width:761px)").matches){
     floorEl.style.height = floorH + "px";
   } else {
     floorEl.style.height = "";
@@ -398,7 +398,7 @@ function hireNext(){
   if (hired >= POOL.length) return;
   const p = POOL[hired];
   AGENTS.push(p);
-  state[p.id] = { agent:p, status:"working", taskIdx:0, lineIdx:0, walking:false };
+  state[p.id] = { agent:p, status:"working", taskIdx:0, lineIdx:0, walking:false, away:false };
   layout(); renderDesks(); buildChars();
   toast("<b>" + p.name + "</b> joined the office. Grove scouted a new " + p.role + ".");
   feed("Grove", "Hired " + p.name + " · " + p.role + ". The floor grows.", "note");
@@ -491,35 +491,53 @@ function walkTo(id, x, y, done){
   }, 3500);
 }
 
-function floorPoint(){
-  const f = document.getElementById("floor");
-  return { x: f.clientWidth * (0.12 + Math.random()*0.76), y: f.clientHeight * (0.3 + Math.random()*0.55) };
+/* The open lane below a row of desks: low enough that a standing
+   character's head clears the bottom of every card in that row, so
+   wanderers never end up standing on names or task text. */
+function laneY(zone){
+  let bottom = 0;
+  AGENTS.filter(a=> a.zone===zone && state[a.id].el).forEach(a=>{
+    const el = state[a.id].el;
+    bottom = Math.max(bottom, el.offsetTop + el.offsetHeight);
+  });
+  return bottom + 97;
+}
+
+function sendHome(id){
+  const s = state[id];
+  const h = charHome(id);
+  if (h) walkTo(id, h.x, h.y, ()=>{ s.away = false; positionChars(); });
+  else s.away = false;
 }
 
 function wander(){
+  /* one character out at a time, so the floor never has empty desks everywhere */
+  if (AGENTS.some(a=> state[a.id].away)) return;
   const idle = AGENTS.filter(a=> !state[a.id].walking && state[a.id].status !== "needs-input");
   if (!idle.length) return;
   const a = idle[Math.floor(Math.random()*idle.length)];
   const s = state[a.id];
+  const f = document.getElementById("floor");
   const roll = Math.random();
   let target, pause = 2600;
-  if (roll < 0.4){
+  if (roll < 0.35){
     const coffee = document.querySelector(".coffee-corner");
     target = { x: coffee.offsetLeft + coffee.offsetWidth/2, y: coffee.offsetTop + 6 };
-  } else if (roll < 0.65){
+  } else if (roll < 0.7){
+    /* visit a colleague: stand in the lane in front of their desk, facing them */
     const others = AGENTS.filter(o=> o.id !== a.id && state[o.id].el);
     const o = others[Math.floor(Math.random()*others.length)];
     const h = charHome(o.id);
-    target = { x: h.x + 52, y: h.y + 10 };
-    if (Math.random() < 0.6) setTimeout(()=> say(a.id, a.lines[s.lineIdx++ % a.lines.length], false), 3600);
+    target = { x: Math.min(Math.max(h.x, 50), f.clientWidth - 50), y: laneY(o.zone) };
   } else {
-    target = floorPoint();
+    /* stroll along a random row's lane */
+    const zones = [...new Set(AGENTS.map(x=>x.zone))];
+    const z = zones[Math.floor(Math.random()*zones.length)];
+    target = { x: f.clientWidth * (0.1 + Math.random()*0.75), y: laneY(z) };
   }
+  s.away = true;
   walkTo(a.id, target.x, target.y, ()=>{
-    setTimeout(()=>{
-      const h = charHome(a.id);
-      if (h) walkTo(a.id, h.x, h.y, ()=> positionChars());
-    }, pause);
+    setTimeout(()=> sendHome(a.id), pause);
   });
 }
 
@@ -620,12 +638,20 @@ function rotate(){
     s.status = "resting";
     feed(s.agent.name, "Taking five at the coffee corner.", "note");
     const coffee = document.querySelector(".coffee-corner");
-    if (coffee && !s.walking) walkTo(s.id, coffee.offsetLeft + coffee.offsetWidth/2, coffee.offsetTop + 6, ()=>{
-      setTimeout(()=>{
-        const h = charHome(s.id);
-        if (h) walkTo(s.id, h.x, h.y, ()=>{ if (state[s.id].status==="resting"){ state[s.id].status="working"; renderDesks(); } positionChars(); });
-      }, 2400);
-    });
+    const someoneAway = AGENTS.some(a=> state[a.id].away);
+    if (coffee && !s.walking && !someoneAway){
+      s.away = true;
+      walkTo(s.id, coffee.offsetLeft + coffee.offsetWidth/2, coffee.offsetTop + 6, ()=>{
+        setTimeout(()=>{
+          const back = ()=>{ s.away = false; if (state[s.id].status==="resting"){ state[s.id].status="working"; renderDesks(); } positionChars(); };
+          const h = charHome(s.id);
+          if (h) walkTo(s.id, h.x, h.y, back); else back();
+        }, 2400);
+      });
+    } else {
+      /* someone else is already out; just take the break at the desk */
+      setTimeout(()=>{ if (state[s.id].status==="resting"){ state[s.id].status="working"; renderDesks(); } }, 6000);
+    }
   }
   renderDesks(); showDetail(s.id, false);
 }
