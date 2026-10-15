@@ -89,6 +89,19 @@
   .desk .plate{display:block;margin-top:7px;background:rgba(10,13,20,.62);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:6px 8px 8px}
   .desk .task{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .char{pointer-events:auto;cursor:pointer}
+  .char:focus-visible{outline:2px solid var(--accent);outline-offset:8px;border-radius:12px}
+  /* ---------- floating name pills: the character's name floats above their
+     head, colour-coded by status. Replaces the under-desk text plates that
+     used to get clipped by the row above. ---------- */
+  .char .pill{display:block;width:max-content;max-width:130px;margin:0 auto 5px;padding:3px 10px;font-size:.68rem;font-weight:700;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);background:rgba(14,18,26,.92);border:1px solid var(--line);border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .char .pill::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#7a8499;margin-right:6px;vertical-align:1px}
+  .char.working .pill::before{background:var(--green)}
+  .char.needs-input .pill::before{background:var(--amber)}
+  .char.done .pill::before{background:var(--blue)}
+  .char.resting .pill::before{background:#7a8499}
+  /* ---------- central plaza: resting agents gather here instead of sitting alone ---------- */
+  .plaza{position:absolute;left:50%;transform:translateX(-50%);bottom:24px;width:min(680px,88%);height:160px;border-radius:50%;border:1px dashed rgba(255,255,255,.12);background:radial-gradient(ellipse at center,rgba(255,180,84,.06),transparent 70%);pointer-events:none}
+  .plaza-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:.72rem;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);opacity:.85;white-space:nowrap}
   /* ---------- status strip ---------- */
   .statusbar{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:9px 14px;margin:0 0 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;font-size:.82rem;color:var(--muted)}
   .statusbar b{color:var(--ink)}
@@ -123,8 +136,8 @@
   @keyframes walkbob{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-4px) rotate(2deg)}}
   @keyframes swing{from{transform:rotate(16deg)}to{transform:rotate(-16deg)}}
   @keyframes hop{from{transform:translateY(0)}to{transform:translateY(-8px)}}
-  @media (min-width:761px){.desk .avatar{display:none}}
-  @media (max-width:760px){#chars{display:none}}
+  @media (min-width:761px){.desk .avatar{display:none}.desk .plate{display:none}}
+  @media (max-width:760px){#chars{display:none}.plaza{display:none}}
 
   /* ---------- side rail ---------- */
   aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
@@ -214,6 +227,7 @@
       <span class="plant" style="right:14px;top:60px">🌿</span>
       <span class="plant" style="left:14px;bottom:14px">🪴</span>
       <div class="coffee-corner">☕ Coffee corner · where the hallway chats happen</div>
+      <div class="plaza" id="plaza"><span class="plaza-label">Plaza · where the crew takes five</span></div>
       <div id="desks"></div>
       <div id="chars"></div>
       <div id="toasts" aria-live="polite"></div>
@@ -244,71 +258,50 @@
 <script>
 const AGENTS = [
   { id:"adam", name:"Adam", role:"Coordinator", color:"#ffb454", desk:{left:"6%",top:"22%"},
-    tasks:["Triaging the morning queue","Turning a messy brief into three clear tasks","Checking who is blocked and unblocking them"],
-    lines:["Queue is triaged. Two builds moving, one waiting on a decision.","I do not need more dashboards. I need fewer surprises."] },
+    tasks:["Triaging the morning queue","Turning a messy brief into three clear tasks","Checking who is blocked and unblocking them"]},
   { id:"conductor", name:"Conductor", role:"Toronto Transit data platform", color:"#5aa9ff", desk:{left:"28.5%",top:"22%"},
-    tasks:["Validating today's GTFS feed drop","Reconciling route IDs after a schedule change","Watching the ingestion pipeline stay green"],
-    lines:["Feed validated. 0 bad rows, which is the best kind of boring.","A route changed shape overnight. Reconciled it before anyone noticed."] },
+    tasks:["Validating today's GTFS feed drop","Reconciling route IDs after a schedule change","Watching the ingestion pipeline stay green"]},
   { id:"saffron", name:"Saffron", role:"Recipe Atlas studio lead", color:"#ff7aa8", desk:{left:"51%",top:"22%"},
-    tasks:["Setting the research queue for fifty ingredients","Holding the quality bar on every journey","Matching journeys to the dishes that prove them"],
-    lines:["The studio is open. Fifty ingredients on the board, and every stop needs a source.","The tomato was feared as poison for 200 years. The receipts check out."] },
+    tasks:["Setting the research queue for fifty ingredients","Holding the quality bar on every journey","Matching journeys to the dishes that prove them"]},
   { id:"coach", name:"Coach", role:"Health and training", color:"#3ddc84", desk:{left:"73.5%",top:"22%"},
-    tasks:["Reviewing this week's training load","Keeping sessions shoulder-friendly","Watching the trend line, not the daily noise"],
-    lines:["Consistency beats intensity. Show up, log it, move on.","Posture work is unglamorous and completely worth it."] },
+    tasks:["Reviewing this week's training load","Keeping sessions shoulder-friendly","Watching the trend line, not the daily noise"]},
   { id:"pulse", name:"Pulse", role:"Project health · daily checks", color:"#ff6b6b", desk:{left:"6%",top:"50%"},
-    tasks:["Checking every live site is up and public","Sweeping the demos for broken pages","Watching for login walls where pages should be open"],
-    lines:["Green means go. I only speak up when something breaks.","A dark demo helps nobody. I keep them lit."] },
+    tasks:["Checking every live site is up and public","Sweeping the demos for broken pages","Watching for login walls where pages should be open"]},
   { id:"pixel", name:"Pixel", role:"UI/UX research · weekly", color:"#b197fc", desk:{left:"28.5%",top:"50%"},
-    tasks:["Reviewing the phone layout on every project","Researching design patterns worth borrowing","Ranking fixes by how much users feel them"],
-    lines:["Phones first. If it fails on a small screen, it fails.","Good design is mostly removing the annoying parts."] },
+    tasks:["Reviewing the phone layout on every project","Researching design patterns worth borrowing","Ranking fixes by how much users feel them"]},
   { id:"spark", name:"Spark", role:"Improvement ideas · weekly", color:"#ffd43b", desk:{left:"51%",top:"50%"},
-    tasks:["Scanning every project for the next improvement","Ranking ideas by impact versus effort","Keeping the idea backlog free of repeats"],
-    lines:["New idea logged. Cheap to build, weirdly valuable.","The backlog grows so the projects do not stall."] },
+    tasks:["Scanning every project for the next improvement","Ranking ideas by impact versus effort","Keeping the idea backlog free of repeats"]},
   { id:"aegis", name:"Aegis", role:"Security review · monthly", color:"#74c0fc", desk:{left:"73.5%",top:"50%"},
-    tasks:["Scanning public pages for leaked data","Checking repos for secrets that should not be there","Reviewing headers, dependencies, and exposure"],
-    lines:["Nothing private belongs on a public page. Ever.","I check the locks so Aaryan does not have to."] },
+    tasks:["Scanning public pages for leaked data","Checking repos for secrets that should not be there","Reviewing headers, dependencies, and exposure"]},
   { id:"forge", name:"Forge", role:"Build engineer · applies the fixes", color:"#ffa94d", desk:{left:"6%",top:"76%"},
-    tasks:["Applying the UX polish queue","Turning research findings into code","Keeping every change small and reversible"],
-    lines:["Polish applied. Build is green, targets are 44px.","Research said fix it, so I fixed it."] },
+    tasks:["Applying the UX polish queue","Turning research findings into code","Keeping every change small and reversible"]},
   { id:"pilot", name:"Pilot", role:"Release engineer · deploys + verifies", color:"#63e6be", desk:{left:"28.5%",top:"76%"},
-    tasks:["Deploying today's changes to production","Verifying every site still loads","Rolling back anything that looks off"],
-    lines:["Deployed and verified live. All green.","If it is not verified on production, it is not done."] },
+    tasks:["Deploying today's changes to production","Verifying every site still loads","Rolling back anything that looks off"]},
   { id:"patch", name:"Patch", role:"Fix engineer · bugs + security", color:"#e599f7", desk:{left:"51%",top:"76%"},
-    tasks:["Squashing the bugs the health checks find","Applying security fixes the same day","Tightening headers and dependencies"],
-    lines:["Bug found, bug fixed, build green.","Security fixes do not wait for a convenient time."] },
+    tasks:["Squashing the bugs the health checks find","Applying security fixes the same day","Tightening headers and dependencies"]},
   { id:"grove", name:"Grove", role:"Talent + capacity", color:"#f97316", desk:{left:"73.5%",top:"76%"},
-    tasks:["Scouting experts for open missions","Balancing workload across the floor","Onboarding each new specialist"],
-    lines:["A new expert joins when the office earns it.","Capacity is a feature. I keep it ahead of demand."] },
+    tasks:["Scouting experts for open missions","Balancing workload across the floor","Onboarding each new specialist"]},
   { id:"polo", name:"Polo", role:"Food historian · Atlas studio", color:"#38bdf8", desk:{left:"6%",top:"76%"},
-    tasks:["Tracing black pepper from the Malabar Coast to Rome","Checking when the tomato actually reached Naples","Reading a 400-year-old account of a sugar mill"],
-    lines:["Every ingredient has a smuggling story. I find them.","Dates first, legends second. The legends are usually wrong."] },
+    tasks:["Tracing black pepper from the Malabar Coast to Rome","Checking when the tomato actually reached Naples","Reading a 400-year-old account of a sugar mill"]},
   { id:"palate", name:"Palate", role:"Editor · Atlas studio", color:"#f472b6", desk:{left:"28.5%",top:"76%"},
-    tasks:["Rewriting the saffron stop so it reads like a story","Cutting a stop note down to the good part","Making sure every claim on the page has a source"],
-    lines:["A stop is not a stop until you know how they used it.","Shorter, truer, tastier. In that order."] },
+    tasks:["Rewriting the saffron stop so it reads like a story","Cutting a stop note down to the good part","Making sure every claim on the page has a source"]},
   { id:"compass", name:"Compass", role:"Cartographer · Atlas studio", color:"#4ade80", desk:{left:"51%",top:"76%"},
-    tasks:["Plotting the vanilla route out of Mexico","Checking a stop's coordinates against the map","Drawing the arc where tea crossed the mountains"],
-    lines:["A route you cannot read is just decoration.","Coordinates checked twice. Maps lie when you let them."] },
+    tasks:["Plotting the vanilla route out of Mexico","Checking a stop's coordinates against the map","Drawing the arc where tea crossed the mountains"]},
   { id:"simmer", name:"Simmer", role:"Recipe scout · Atlas studio", color:"#fb923c", desk:{left:"73.5%",top:"76%"},
-    tasks:["Picking the one dish that proves what Goa did to chili","Arguing why this dish, not the famous one","Shortlisting highlight dishes for the coffee route"],
-    lines:["One dish per stop, and it has to earn its place.","If the dish does not show the ingredient, it does not ship."] },
+    tasks:["Picking the one dish that proves what Goa did to chili","Arguing why this dish, not the famous one","Shortlisting highlight dishes for the coffee route"]},
   { id:"ember", name:"Ember", role:"Studio engineer · Atlas studio", color:"#f87171", desk:{left:"6%",top:"76%"},
-    tasks:["Wiring the new journey data into the map","Making the timeline scrubber behave on phones","Shipping this week's researched journeys"],
-    lines:["Data in, build green, live and verified.","The map is only as good as the data under it."] },
+    tasks:["Wiring the new journey data into the map","Making the timeline scrubber behave on phones","Shipping this week's researched journeys"]},
 ];
 /* Experts Grove can hire as the office levels up (unlocked at office LVL 2-5) */
 const POOL = [
   { id:"scribe", name:"Scribe", role:"Documentation writer", color:"#7dd3fc",
-    tasks:["Writing the docs nobody wanted to write","Turning tribal knowledge into pages","Keeping every guide one version behind reality, at most"],
-    lines:["If it is not written down, it did not happen.","Docs done. Future us says thanks."] },
+    tasks:["Writing the docs nobody wanted to write","Turning tribal knowledge into pages","Keeping every guide one version behind reality, at most"]},
   { id:"mirror", name:"Mirror", role:"Reviewer · code + docs", color:"#a3e635",
-    tasks:["Reviewing every change before it ships","Catching the bug at 2am before users do","Keeping quality boring and consistent"],
-    lines:["Reviewed. Two nits, zero blockers.","Ship it. I checked twice."] },
+    tasks:["Reviewing every change before it ships","Catching the bug at 2am before users do","Keeping quality boring and consistent"]},
   { id:"fable", name:"Fable", role:"Content + copywriting", color:"#e879f9",
-    tasks:["Writing launch posts people actually read","Turning changelogs into stories","Keeping the voice human, not corporate"],
-    lines:["Draft is up. Punchy, honest, no fluff.","Good copy is a feature. Shipped."] },
+    tasks:["Writing launch posts people actually read","Turning changelogs into stories","Keeping the voice human, not corporate"]},
   { id:"beacon", name:"Beacon", role:"Outreach + distribution", color:"#fbbf24",
-    tasks:["Getting each launch in front of people","Finding the rooms where users hang out","Turning quiet wins into visible ones"],
-    lines:["Posted where the users are. Watching the replies.","Visibility is earned, then amplified."] },
+    tasks:["Getting each launch in front of people","Finding the rooms where users hang out","Turning quiet wins into visible ones"]},
 ];
 const HIRE_AT = [2,3,4,5];
 const ZONE_NAMES = ["Project crew","Standing ops","Ship crew","New hires","Recipe Atlas studio"];
@@ -368,7 +361,7 @@ function avatarSVG(a){
 }
 
 const state = {};
-AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, lineIdx:0, walking:false, away:false }; });
+AGENTS.forEach((a,i)=>{ state[a.id] = { agent:a, status: i===1 ? "needs-input" : "working", taskIdx:0, walking:false, away:false }; });
 
 /* ---------- dynamic layout: the floor grows with the crew ---------- */
 function layout(){
@@ -388,7 +381,7 @@ function layout(){
     topPxMap[z] = acc;
     acc += rowH[z];
   });
-  const floorH = acc + 24;
+  const floorH = acc + 24 + 190; /* +190 reserves the plaza band at the bottom */
   const topPx = z => topPxMap[z];
   rows.forEach(z=>{
     const row = zones[z];
@@ -423,7 +416,7 @@ function hireNext(){
   if (hired >= POOL.length) return;
   const p = POOL[hired];
   AGENTS.push(p);
-  state[p.id] = { agent:p, status:"working", taskIdx:0, lineIdx:0, walking:false, away:false };
+  state[p.id] = { agent:p, status:"working", taskIdx:0, walking:false, away:false };
   layout(); renderDesks(); buildChars();
   toast("<b>" + p.name + "</b> joined the office. Grove scouted a new " + p.role + ".");
   feed("Grove", "Hired " + p.name + " · " + p.role + ". The floor grows.", "note");
@@ -481,19 +474,46 @@ function buildChars(){
     if (chars[a.id]) return;
     const c = document.createElement("div");
     c.className = "char";
-    c.innerHTML = '<div class="bob">' + charSVG(a) + '</div>';
+    c.innerHTML = '<span class="pill">' + a.name + '</span><div class="bob">' + charSVG(a) + '</div>';
     c.title = a.name + " · " + a.role;
+    c.tabIndex = 0;
+    c.setAttribute("role", "button");
+    c.setAttribute("aria-label", a.name + " · " + a.role + " · open info card");
     c.addEventListener("click", ()=> showDetail(a.id, true));
+    c.addEventListener("keydown", (e)=>{
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); showDetail(a.id, true); }
+    });
     charsEl.appendChild(c);
     chars[a.id] = c;
   });
+  syncPills();
   positionChars();
 }
 
 function positionChars(){
+  /* resting characters gather at the central plaza in an arc, instead of
+     standing alone at their desks */
+  const resters = AGENTS.filter(a=> state[a.id].status === "resting" && chars[a.id] && !state[a.id].walking);
+  const spotOf = {};
+  resters.forEach((a,i)=>{ spotOf[a.id] = plazaSpot(i, resters.length); });
   AGENTS.forEach(a=>{
     const c = chars[a.id], s = state[a.id];
     if (!c || s.walking) return;
+    const spot = spotOf[a.id];
+    if (spot){
+      const cx = parseFloat(c.style.left) || 0, cy = parseFloat(c.style.top) || 0;
+      if (Math.abs(cx - spot.x) > 6 || Math.abs(cy - spot.y) > 6){
+        s.away = true; s.plaza = true;
+        walkTo(a.id, spot.x, spot.y, ()=>{});
+      }
+      c.classList.remove("needshop","flip");
+      return;
+    }
+    if (s.plaza){
+      s.plaza = false;
+      sendHome(a.id);
+      return;
+    }
     const h = charHome(a.id);
     if (!h) return;
     c.style.left = h.x + "px"; c.style.top = h.y + "px";
@@ -501,6 +521,28 @@ function positionChars(){
     c.classList.remove("flip");
   });
   if (typeof cardFor !== "undefined" && cardFor) placeCard(cardFor);
+}
+
+/* an arc of rest spots around the plaza's ellipse, one per resting agent */
+function plazaCenter(){
+  const p = document.getElementById("plaza");
+  return { x: p.offsetLeft + p.offsetWidth/2, y: p.offsetTop + p.offsetHeight/2, w: p.offsetWidth };
+}
+function plazaSpot(i, n){
+  const c = plazaCenter();
+  const rx = Math.min(250, c.w/2 - 30);
+  const ang = -Math.PI/2 + (n === 1 ? 0 : (i/(n-1) - 0.5) * Math.PI * 1.15);
+  return { x: c.x + Math.cos(ang)*rx, y: c.y + Math.sin(ang)*44 };
+}
+
+/* the floating name pill always mirrors the character's current status */
+function syncPills(){
+  AGENTS.forEach(a=>{
+    const c = chars[a.id];
+    if (!c) return;
+    c.classList.remove("working","needs-input","done","resting");
+    c.classList.add(state[a.id].status);
+  });
 }
 
 function walkTo(id, x, y, done){
@@ -618,6 +660,7 @@ function renderDesks(){
   });
   syncWho();
   updateStatusbar();
+  syncPills();
   positionChars();
 }
 
@@ -691,7 +734,9 @@ function placeCard(id){
   if (cx === null) return;
   const cw = 248, chh = cardEl.offsetHeight || 130;
   const left = Math.min(Math.max(cx - cw/2, 8), Math.max(f.clientWidth - cw - 8, 8));
-  let top = feetY - 101 - chh - 12;
+  /* sit the card just above the character's head, whatever the pill makes it */
+  const headH = (c && c.offsetHeight) || 101;
+  let top = feetY - headH - chh - 12;
   if (top < 8) top = feetY + 16;
   top = Math.min(top, Math.max(f.clientHeight - chh - 8, 8));
   cardEl.style.left = left + "px";
@@ -722,22 +767,9 @@ function rotate(){
     feed(s.agent.name, "Needs a decision before continuing: " + s.agent.tasks[s.taskIdx % s.agent.tasks.length] + ".", "ask");
   } else {
     s.status = "resting";
-    feed(s.agent.name, "Taking five at the coffee corner.", "note");
-    const coffee = document.querySelector(".coffee-corner");
-    const someoneAway = AGENTS.some(a=> state[a.id].away);
-    if (coffee && !s.walking && !someoneAway){
-      s.away = true;
-      walkTo(s.id, coffee.offsetLeft + coffee.offsetWidth/2, coffee.offsetTop + 6, ()=>{
-        setTimeout(()=>{
-          const back = ()=>{ s.away = false; if (state[s.id].status==="resting"){ state[s.id].status="working"; renderDesks(); } positionChars(); };
-          const h = charHome(s.id);
-          if (h) walkTo(s.id, h.x, h.y, back); else back();
-        }, 2400);
-      });
-    } else {
-      /* someone else is already out; just take the break at the desk */
-      setTimeout(()=>{ if (state[s.id].status==="resting"){ state[s.id].status="working"; renderDesks(); } }, 6000);
-    }
+    feed(s.agent.name, "Taking five at the plaza.", "note");
+    /* positionChars() gathers resting characters at the plaza on the next render */
+    setTimeout(()=>{ if (state[s.id].status==="resting"){ state[s.id].status="working"; renderDesks(); } }, 12000);
   }
   renderDesks(); showDetail(s.id, false);
   /* when a character pops up needing input, their card pops up with them */
